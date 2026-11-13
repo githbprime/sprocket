@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sprocket</title>
+<style>
+:root{--bg:#12171d;--p:#1b232c;--p2:#243039;--l:#33414d;--t:#e8edf1;--m:#8c9aa7;--a:#f2b134}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--t);font:14px/1.4 "Segoe UI",system-ui,sans-serif;user-select:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;outline:0;touch-action:none}
+button,select,input{font:inherit;color:var(--t);background:var(--p2);border:1px solid var(--l);border-radius:5px;padding:6px 11px}
+button{cursor:pointer}button:hover,button:focus-visible{border-color:var(--a);outline:0}
+button.on,button.pri{background:var(--a);color:#14181c;border-color:var(--a);font-weight:600}
+.ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,13,17,.5);backdrop-filter:blur(5px);z-index:10}
+.ov.on{display:flex}
+.card{background:var(--p);border:1px solid var(--l);border-radius:8px;padding:20px;min-width:300px;max-width:min(940px,94vw);max-height:90vh;overflow:auto}
+h1{font-size:clamp(40px,9vw,92px);margin:0 0 18px;font-weight:300;letter-spacing:.14em}
+h1 b{font-weight:800;color:var(--a)}
+h2{margin:0 0 12px;font-size:20px;font-weight:600}h3{margin:16px 0 4px;color:var(--a);font-size:14px}
+.menu{display:flex;flex-direction:column;gap:8px;width:250px}
+.menu button{padding:11px 14px;font-size:16px;text-align:left}
+.bar{position:fixed;z-index:5;background:rgba(27,35,44,.94);border:1px solid var(--l);border-radius:8px;padding:6px;display:none;gap:6px;align-items:center}
+.game .bar{display:flex}
+#top{top:10px;left:50%;transform:translateX(-50%);flex-wrap:wrap;justify-content:center;max-width:96vw}
+#info{bottom:10px;left:50%;transform:translateX(-50%);max-width:94vw;flex-wrap:wrap;justify-content:center;font-size:13px}.play #info{display:none}.sep{width:1px;height:22px;background:var(--l)}
+#pal{left:10px;top:64px;flex-direction:column;align-items:stretch;width:224px;max-height:calc(100% - 80px);overflow:auto}
+#tabs{display:flex;gap:4px;flex-wrap:wrap}#tabs button{flex:1;padding:5px 2px;font-size:12px}
+#pal .it{text-align:left;display:flex;align-items:center;gap:8px}
+.sw{width:12px;height:12px;border-radius:2px;flex:none;border:1px solid #0006}
+.pl,.pl2{display:none}.play .pl{display:inline-flex;gap:8px;align-items:center}
+.play .bb,.play #pal{display:none!important}
+.row{display:flex;justify-content:space-between;align-items:center;gap:24px;margin:8px 0}
+small,.mu{color:var(--m);font-size:12px}
+#sl{display:grid;grid-template-columns:repeat(3,200px);gap:12px;margin:10px 0}
+.sv{background:var(--p2);border:1px solid var(--l);border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:4px}
+.sv img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:4px;background:#0003}
+.sv div{display:flex;flex-wrap:wrap;gap:4px}.sv button{padding:3px 7px;font-size:12px}
+.cm{position:fixed;z-index:30;display:none;background:var(--p);border:1px solid var(--l);border-radius:6px;padding:4px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--p);border:1px solid var(--a);padding:8px 14px;border-radius:6px;z-index:40;display:none}
+@media(max-width:720px){#sl{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar" id="top">
+ <button id="bm" class="pri">Play</button><span class="sep"></span>
+ <span class="bb" style="display:contents">
+  <button data-t="move" class="on" title="Move (1)">Move</button><button data-t="rot" title="Rotate (2)">Rotate</button><button data-t="scale" title="Scale (3), beams, planks and glass">Scale</button>
+  <button id="bd" title="Ctrl+D">Duplicate</button><button id="bx" title="Delete">Delete</button>
+ </span>
+ <span class="pl">Time <input id="ts" type="range" min="0" max="200" value="100"><b id="tl">100%</b><small>W / S to drive</small></span>
+ <span class="sep"></span><button id="bs">Saves</button><button id="bmenu">Menu</button>
+</div>
+<div class="bar" id="info"><span id="inf"></span><span id="pr" style="display:none;gap:6px;align-items:center">Stiffness <input id="pk" type="range" min="1" max="20" step=".5"> Damping <input id="pz" type="range" min="0" max="1" step=".05"></span><span class="bb" style="display:contents"><button data-r="y" title="R">Turn Y 90°</button><button data-r="x" title="T">Turn X 90°</button><button data-r="z" title="G">Turn Z 90°</button></span></div>
+<div class="bar" id="pal"><div id="tabs"></div><div id="pl" style="display:flex;flex-direction:column;gap:4px"></div></div>
+
+<div class="ov on" id="menu"><div class="menu"><h1>SPROCKET</h1>
+ <button class="pri" id="mp">Play</button><button data-go="chg">Changelog</button><button data-go="opt">Options</button><button id="mq">Quit</button><small id="ver"></small></div></div>
+<div class="ov" id="pause"><div class="menu"><h2>Paused</h2><button class="pri" data-go="">Resume</button><button id="ps">Saves</button><button data-go="opt">Options</button><button id="pm">Main menu</button></div></div>
+<div class="ov" id="chg"><div class="card"><h2>Changelog</h2><div id="chgb"></div><button class="bk">Back</button></div></div>
+<div class="ov" id="opt"><div class="card"><h2>Options</h2><div id="optb"></div><button class="bk">Back</button></div></div>
+<div class="ov" id="saves"><div class="card"><h2>Saves</h2>
+ <div class="row" style="justify-content:flex-start"><button class="pri" id="sn">Save as new</button><button id="si">Import .spr</button><input id="sf" type="file" accept=".spr" hidden></div>
+ <div id="sl"></div>
+ <div class="row"><span><button id="pp">&lt;</button> <span id="pgi">1 / 1</span> <button id="pn">&gt;</button></span><button class="bk">Close</button></div></div></div>
+<div class="ov" id="ask" style="z-index:20"><div class="card"><h2 id="aq"></h2><input id="ai" maxlength="40" style="width:100%"><div class="row"><button id="ac">Cancel</button><button class="pri" id="ak">Save</button></div></div></div>
+<div class="cm" id="cm"><button id="ce">Export .spr</button></div>
+<div id="toast"></div>
+
+<script>
+// Babylon.js loads as a classic script; Jolt is an ES module, so it is imported. ./lib/ is tried first (needs http, optional), then CDNs.
+// Sandboxed frames (e.g. embedded previews) can block the Gamepad API, which Babylon touches when the camera attaches. Stub it so controls still work.
+try{navigator.getGamepads()}catch(e){try{Object.defineProperty(navigator,'getGamepads',{value:()=>[],configurable:true})}catch(e2){}}
+const BJS=['lib/babylon.js','https://cdn.jsdelivr.net/npm/babylonjs@7/babylon.js','https://unpkg.com/babylonjs@7/babylon.js','https://cdn.babylonjs.com/babylon.js'];
+const JLT=['lib/jolt-physics.wasm-compact.js','https://cdn.jsdelivr.net/npm/jolt-physics/dist/jolt-physics.wasm-compat.js','https://unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js'];
+const fail=m=>{let d=document.getElementById('err');if(!d){d=document.createElement('div');d.id='err';d.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99;max-width:70vw;background:#3a1418;border:1px solid #c44;color:#fdd;padding:8px 12px;border-radius:6px;font:12px monospace;white-space:pre-wrap';document.body.appendChild(d)}d.textContent+=m+'\n'};
+addEventListener('error',e=>{if(!e.error&&!e.message)return;console.error(e.error||e.message);fail((e.error&&e.error.stack)||(e.message+(e.filename?' ('+e.filename.split('/').pop()+':'+e.lineno+')':'')))});
+addEventListener('unhandledrejection',e=>e.reason instanceof Event?console.warn(e.reason):fail(String(e.reason&&e.reason.message||e.reason)));
+const ld=u=>new Promise((r,j)=>{const s=document.createElement('script');s.src=u;if(/^https?:/.test(u))s.crossOrigin='anonymous';s.onload=r;s.onerror=j;document.head.appendChild(s)});
+async function loadJolt(){for(const u of JLT){try{const m=await import(new URL(u,location.href).href);let f=m.default||m.Jolt;if(!f){await ld(u);f=window.Jolt}if(f){window.JoltInit=f;return}}catch(e){}}}
+(async()=>{
+ for(const u of BJS){if(window.BABYLON)break;try{await ld(u)}catch(e){}}
+ if(!window.BABYLON){fail('Could not load Babylon.js. Check your connection, or put babylon.js in a lib folder (served over http).');return}
+ await loadJolt();
+ if(!window.JoltInit)fail('Could not load Jolt physics. Building works, but Play is disabled.');
+ const s=document.createElement('script');s.type='module';s.textContent=document.getElementById('main').textContent;document.body.appendChild(s)})();
+</script>
+<script type="text/plain" id="main">
+const VER=1,GV='0.1.0',$=s=>document.querySelector(s),rn=n=>Math.round(n*1e4)/1e4,V=BABYLON.Vector3;
+// Hooks for Arbiter: set window.SprocketHost = {quit(), onPersist(kind,id)} before this script runs.
+const host=window.SprocketHost=window.SprocketHost||{};
+const CHG=[['0.1.0',['Build mode and play mode with 0-200% time scale','Move, rotate and scale gizmos with snapping','Four structural metals, wood, standard and tempered glass, motors, wheels','Saves (IndexedDB, 6 per page) with screenshots, rename, update, delete, .spr export/import','Graphics, physics and preference options']]];
+// density kg/m3, strength multiplier
+const MATS={steel:['#8b939c',7850,1],ti:['#b9c0c9',4430,1.4],nit:['#9fb4c7',6450,1.2],tw:['#5d6068',11000,2.6],wood:['#a9794a',700,.25],glass:['#9fd4e8',2500,.12],tglass:['#7fc4dc',2500,.45],rub:['#25282c',1100,.6]};
+const PARTS={
+ b_ti:{n:'Titanium alloy beam',g:'Structure',m:'ti',s:[.25,.25,2],sc:1},
+ b_nit:{n:'Nitinol beam',g:'Structure',m:'nit',s:[.25,.25,2],sc:1},
+ b_steel:{n:'Steel beam',g:'Structure',m:'steel',s:[.25,.25,2],sc:1},
+ b_tw:{n:'Ti/W beam',g:'Structure',m:'tw',s:[.25,.25,2],sc:1},
+ plank:{n:'Wood plank',g:'Structure',m:'wood',s:[.3,.08,2],sc:1},
+ glass:{n:'Glass pane',g:'Glazing',m:'glass',s:[1,.05,1],sc:1},
+ tglass:{n:'Tempered glass',g:'Glazing',m:'tglass',s:[1,.05,1],sc:1},
+ motor:{n:'Electric motor',g:'Drive',m:'steel',s:[.4,.4,.4],col:'#4a6a8a',rot:[0,0,.7071,.7071],shaft:1,fk:{2:'M'}},
+ wheel:{n:'Wheel',g:'Drive',m:'rub',s:[1,.35,1],cyl:1,spoke:1,rot:[0,0,.7071,.7071],fk:{0:'N',1:'N',4:'N',5:'N',2:'H',3:'H'}},
+ hinge:{n:'Hinge (free)',g:'Joints',m:'steel',s:[.3,.3,.3],col:'#7b8794',rot:[0,0,.7071,.7071],shaft:1,jt:1,fk:{2:'J'}},
+ servo:{n:'Servo hinge (steering)',g:'Joints',m:'steel',s:[.35,.35,.35],col:'#2f7d6d',rot:[0,0,.7071,.7071],shaft:1,jt:2,fk:{2:'J'}},
+ spring:{n:'Coil spring',g:'Suspension',m:'steel',s:[.25,.25,1.2],col:'#c9ced3',sc:1,spr:1,fk:{0:'N',1:'N',2:'N',3:'N'}}};
+const OD=[['Graphics',[['gpu','Renderer (reload to apply)',['WebGPU if available','WebGL2']],['res','Render scale',{min:.5,max:1.5,step:.25,f:v=>v*100+'%'}],['aa','Anti-aliasing',['Off','FXAA','MSAA 4x']],['bloom','Bloom','chk'],['sh','Shadows',['Off','Standard','High']],['fov','Field of view',{min:50,max:100,step:5,f:v=>v+'°'}]]],
+ ['Physics',[['q','Quality',['Low (30 Hz, discrete)','Balanced (60 Hz, discrete)','High (120 Hz, continuous)']]]],
+ ['Preferences',[['snap','Move snap (m)',{min:.05,max:1,step:.05}],['vol','Master volume',{min:0,max:1,step:.05,f:v=>Math.round(v*100)+'%'}]]]];
+const OPT=Object.assign({gpu:0,res:1,aa:1,bloom:1,sh:1,fov:60,q:1,snap:.25,vol:.8},(()=>{try{return JSON.parse(localStorage.getItem('sprocket:opts')||'{}')}catch(e){return{}}})());
+const QS=[{hz:30,cq:0},{hz:60,cq:0},{hz:120,cq:1}];
+
+/* scene */
+let cv=$('#c'),engine;
+if(!OPT.gpu&&BABYLON.WebGPUEngine&&await BABYLON.WebGPUEngine.IsSupportedAsync){try{engine=new BABYLON.WebGPUEngine(cv,{antialias:true,adaptToDeviceRatio:true,stencil:true});await engine.initAsync()}catch(e){console.warn('WebGPU unavailable, using WebGL2',e);engine=null;const n=cv.cloneNode(false);cv.replaceWith(n);cv=n}}
+engine=engine||new BABYLON.Engine(cv,true,{preserveDrawingBuffer:true,stencil:true},true);
+const scene=new BABYLON.Scene(engine),safe=(n,f)=>{try{return f()}catch(e){fail(n+': '+(e&&e.stack||e))}};
+scene.clearColor=new BABYLON.Color4(.09,.11,.14,1);
+const cam=new BABYLON.ArcRotateCamera('cam',-.8,1.1,14,new V(0,1,0),scene);
+cam.attachControl(cv,true);cam.inputs.attached.pointers.buttons=[1,2];cam.wheelPrecision=20;cam.lowerRadiusLimit=2;cam.upperBetaLimit=1.5;cam.minZ=.1;
+new BABYLON.HemisphericLight('h',new V(0,1,0),scene).intensity=.8;
+const sun=new BABYLON.DirectionalLight('s',new V(-.5,-1,-.4),scene);sun.position=new V(20,40,20);sun.intensity=.9;
+const sgen=safe('Shadows',()=>{const g=new BABYLON.ShadowGenerator(1024,sun);g.usePercentageCloserFiltering=true;return g});
+const pipe=safe('Post-processing',()=>{const p=new BABYLON.DefaultRenderingPipeline('p',true,scene,[cam]);p.bloomThreshold=.9;return p});
+const ground=BABYLON.MeshBuilder.CreateGround('g',{width:400,height:400},scene),gt=new BABYLON.DynamicTexture('gt',1024,scene,true),g2=gt.getContext();
+g2.fillStyle='#232c35';g2.fillRect(0,0,1024,1024);for(let i=0;i<=10;i++){const v=i*102.4,M=i%5===0;g2.strokeStyle=M?'#7f95a8':'#3a4a58';g2.lineWidth=M?6:3;g2.beginPath();g2.moveTo(v,0);g2.lineTo(v,1024);g2.moveTo(0,v);g2.lineTo(1024,v);g2.stroke()}gt.anisotropicFilteringLevel=8;gt.update();
+const gmat=new BABYLON.StandardMaterial('gm',scene);gmat.diffuseTexture=gt;gt.uScale=gt.vScale=40;gmat.specularColor=BABYLON.Color3.Black();
+safe('Axes',()=>[[new V(3,.02,0),'#e5484d'],[new V(0,.02,3),'#4aa3ff']].forEach(([e,c])=>{const l=BABYLON.MeshBuilder.CreateLines('ax',{points:[new V(0,.02,0),e]},scene);l.color=BABYLON.Color3.FromHexString(c);l.isPickable=false}));ground.material=gmat;ground.receiveShadows=true;ground.isPickable=false;
+
+/* parts */
+const parts=[],mc={};let armed=null,ghost=null,gq=null,bad='',sel=null,tool='move',mode='build',game=false,snap=null,ts=1,cur='menu',back=null;
+const mat=t=>mc[t]||(mc[t]=(()=>{const d=PARTS[t],m=new BABYLON.StandardMaterial(t,scene);m.diffuseColor=BABYLON.Color3.FromHexString(d.col||MATS[d.m][0]);m.specularColor=new BABYLON.Color3(.3,.3,.3);if(/glass/.test(d.m))m.alpha=.4;return m})());
+function mk(t,p,r,s,x){const d=PARTS[t],m=d.cyl?BABYLON.MeshBuilder.CreateCylinder('p',{height:1,diameter:1,tessellation:28},scene):BABYLON.MeshBuilder.CreateBox('p',{size:1},scene);
+ m.material=mat(t);m.position.set(...p);m.rotationQuaternion=new BABYLON.Quaternion(...(r||d.rot||[0,0,0,1]));m.scaling.set(...(s||d.s));m.metadata={t,...(d.spr?{k:4,z:.5}:{}),...(x&&x.k!==undefined?{k:x.k,z:x.z}:{})};sgen&&sgen.addShadowCaster(m);parts.push(m);dec(m,d);return m}
+const EC=new BABYLON.Color4(.03,.04,.06,1),SC=new BABYLON.Color4(.95,.69,.2,1),massOf=m=>{const d=PARTS[m.metadata.t],s=m.scaling;return Math.max(1,s.x*s.y*s.z*(d.cyl?.785:1)*MATS[d.m][1]*.25)};
+const am=()=>mc._a||(mc._a=(()=>{const m=new BABYLON.StandardMaterial('a',scene);m.diffuseColor=BABYLON.Color3.FromHexString('#f2b134');m.emissiveColor=new BABYLON.Color3(.3,.18,0);return m})());
+function dec(m,d){try{m.enableEdgesRendering(.95);m.edgesWidth=2.5;m.edgesColor=EC}catch(e){}
+ const kid=c=>{c.parent=m;c.material=am();c.isPickable=false},B=BABYLON.MeshBuilder;
+ if(d.shaft){const a=B.CreateCylinder('sh',{height:.9,diameter:.3},scene),b=B.CreateCylinder('tip',{height:.5,diameterTop:0,diameterBottom:1.1},scene);a.position.y=.95;b.position.y=1.65;kid(a);kid(b)}
+ if(d.spoke)kid(B.CreateBox('sp',{width:1,height:1.03,depth:.12},scene))}
+function align(){parts.forEach(w=>{if(w.metadata.t!=='wheel')return;const mo=parts.find(o=>o.metadata.t==='motor'&&o.position.subtract(w.position).length()<.9);if(!mo)return;
+ const ax=new V(0,1,0).rotateByQuaternionToRef(mo.rotationQuaternion,new V()),wa=new V(0,1,0).rotateByQuaternionToRef(w.rotationQuaternion,new V()),q=new BABYLON.Quaternion();
+ BABYLON.Quaternion.FromUnitVectorsToRef(wa,ax,q);w.rotationQuaternion=q.multiply(w.rotationQuaternion);w.position=mo.position.add(ax.scale(V.Dot(w.position.subtract(mo.position),ax)))})}
+function info(){const m=sel,e=$('#inf'),pr=!armed&&m&&m.metadata.k!==undefined;$('#pr').style.display=pr?'inline-flex':'none';if(pr){$('#pk').value=m.metadata.k;$('#pz').value=m.metadata.z}if(armed){e.textContent=`Placing ${PARTS[armed].n}. Click to place, R / T / G turns it, Esc cancels.`;return}if(!m){e.textContent='Forward is the blue line (W / S drives, A / D steers). Click a part to select it. Right-drag orbits.';return}const d=PARTS[m.metadata.t],z=m.scaling;
+ e.textContent=`${d.n}, ${massOf(m).toFixed(0)} kg, ${z.x.toFixed(2)} x ${z.y.toFixed(2)} x ${z.z.toFixed(2)} m`+(d.shaft?(d.jt?'. Parts on the arrow side pivot about it':'. Wheels go on the arrow side'):d.cyl?'. The stripe shows spin':d.spr?'. Attach both ends to parts':'')}
+function rot90(a){const q=BABYLON.Quaternion.RotationAxis(a==='x'?V.Right():a==='y'?V.Up():V.Forward(),Math.PI/2);if(armed){gq=q.multiply(gq);return}if(!sel||mode!=='build')return;sel.rotationQuaternion=q.multiply(sel.rotationQuaternion);fix()}
+document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>rot90(b.dataset.r));addEventListener('pointerup',()=>setTimeout(()=>{fix();info()},0));
+const ser=()=>parts.map(m=>({t:m.metadata.t,p:m.position.asArray().map(rn),r:m.rotationQuaternion.asArray().map(rn),s:m.scaling.asArray().map(rn),k:m.metadata.k,z:m.metadata.z}));
+function load(a){gz.attachToMesh(null);parts.forEach(m=>m.dispose());parts.length=0;a.forEach(o=>mk(o.t,o.p,o.r,o.s,o))}
+
+/* gizmos */
+const gz=new BABYLON.GizmoManager(scene);gz.attachableMeshes=parts;gz.clearGizmoOnEmptyPointerEvent=true;
+function applyTool(){gz.positionGizmoEnabled=tool==='move';gz.rotationGizmoEnabled=tool==='rot';gz.scaleGizmoEnabled=tool==='scale'&&!!sel&&!!PARTS[sel.metadata.t].sc;
+ const g=gz.gizmos;if(g.positionGizmo){g.positionGizmo.snapDistance=OPT.snap;g.positionGizmo.updateGizmoRotationToMatchAttachedMesh=false}
+ if(g.rotationGizmo)g.rotationGizmo.snapDistance=Math.PI/12;if(g.scaleGizmo)g.scaleGizmo.snapDistance=.25;
+ document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===tool))}
+gz.onAttachedToMeshObservable.add(m=>{parts.forEach(p=>{try{p.edgesColor=EC;p.edgesWidth=2.5}catch(e){}});if(m)try{m.edgesColor=SC;m.edgesWidth=7}catch(e){}sel=m;if(m&&!m._ok)m._ok=[m.position.clone(),m.rotationQuaternion.clone(),m.scaling.clone()];info();if(m&&tool==='scale'&&!PARTS[m.metadata.t].sc)toast('This part cannot be scaled');applyTool()});safe('Gizmos',applyTool);
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tool=b.dataset.t;applyTool()});
+function del(){if(!sel)return;const m=sel;gz.attachToMesh(null);parts.splice(parts.indexOf(m),1);m.dispose()}
+function dup(){if(!sel)return;const m=sel,n=mk(m.metadata.t,m.position.asArray(),m.rotationQuaternion.asArray(),m.scaling.asArray(),m.metadata);for(let k=0;k<80&&!check(n);k++)n.position.x+=.5;gz.attachToMesh(n)}
+$('#bx').onclick=del;$('#bd').onclick=dup;
+const EPS=.02,ok=(a,b)=>a==='S'&&b==='S'||a==='M'&&b==='H'||a==='H'&&b==='M'||a==='J'&&b==='S'||a==='S'&&b==='J',fk=(m,f)=>(PARTS[m.metadata.t].fk||{})[f]||'S';
+// Face kinds: S structural, M motor shaft, H wheel hub, J joint pivot, N nothing. ok() is the allowed-pair table.
+const obb=m=>{const q=m.rotationQuaternion,s=m.scaling;return{c:m.position,A:[V.Right(),V.Up(),V.Forward()].map(v=>v.rotateByQuaternionToRef(q,new V())),h:[s.x/2,s.y/2,s.z/2]}};
+const ext=(o,n)=>o.h.reduce((s,h,i)=>s+h*Math.abs(V.Dot(o.A[i],n)),0);
+function rel(a,b){const t=b.c.subtract(a.c),X=[...a.A,...b.A],out=[];let touch=false;
+ for(let i=0;i<3;i++)for(let j=0;j<3;j++){const c=V.Cross(a.A[i],b.A[j]);if(c.length()>1e-4)X.push(c.normalize())}
+ for(let k=0;k<X.length;k++){const n=X[k],d=ext(a,n)+ext(b,n)-Math.abs(V.Dot(t,n));if(d<-EPS)return'sep';if(d>EPS)continue;touch=true;if(k>5)continue;
+  const A=k<3,own=A?a:b,oth=A?b:a,i=k%3,sg=V.Dot(A?t:t.scale(-1),own.A[i])>0?1:-1,nr=own.A[i].scale(sg);let j=0,bs=-1;
+  for(let g=0;g<3;g++){const q=Math.abs(V.Dot(oth.A[g],nr));if(q>bs){bs=q;j=g}}
+  const fo=2*i+(sg>0?0:1),fp=2*j+(V.Dot(oth.A[j],nr)>0?1:0);out.push(A?{fa:fo,fb:fp}:{fa:fp,fb:fo})}
+ return touch?out:'overlap'}
+function check(m){bad='';const A=obb(m);if(m.position.y-ext(A,V.Up())<-EPS){bad='Parts cannot go below the floor';return false}
+ for(const o of parts){if(o===m)continue;const r=rel(A,obb(o));if(r==='sep')continue;if(r==='overlap'){bad='Parts cannot overlap';return false}
+  for(const c of r)if(!ok(fk(m,c.fa),fk(o,c.fb))){bad='Those faces cannot be joined';return false}}return true}
+function fix(){const m=sel;if(!m||mode!=='build'||armed||!m._ok)return;if(check(m))m._ok=[m.position.clone(),m.rotationQuaternion.clone(),m.scaling.clone()];else{m.position.copyFrom(m._ok[0]);m.rotationQuaternion.copyFrom(m._ok[1]);m.scaling.copyFrom(m._ok[2]);toast(bad)}}
+function follow(){if(!parts.length)return;const c=new V();parts.forEach(m=>c.addInPlace(m.position));cam.target=V.Lerp(cam.target,c.scale(1/parts.length),.04)}
+const gvm=['#3ddc84','#ff5252'].map(c=>{const m=new BABYLON.StandardMaterial('gv',scene);m.diffuseColor=BABYLON.Color3.FromHexString(c);m.emissiveColor=BABYLON.Color3.FromHexString(c).scale(.5);m.alpha=.5;return m});
+function arm(t){disarm();armed=t;gq=new BABYLON.Quaternion(...(PARTS[t].rot||[0,0,0,1]));ghost=mk(t,[0,-50,0]);parts.splice(parts.indexOf(ghost),1);ghost.isPickable=false;gz.attachToMesh(null);gz.usePointerToAttachGizmos=false;rpal();info()}
+function disarm(){if(ghost)ghost.dispose();ghost=armed=null;gz.usePointerToAttachGizmos=mode==='build';rpal();info()}
+function updGhost(){if(!ghost)return;const pk=scene.pick(scene.pointerX,scene.pointerY,m=>m===ground||parts.includes(m));
+ if(!pk.hit){ghost.setEnabled(false);return}ghost.setEnabled(true);
+ const hit=pk.pickedMesh!==ground,n=(hit&&pk.getNormal(true))||V.Up(),q=ghost.rotationQuaternion;q.copyFrom(gq);
+ if(hit){const o=pk.pickedMesh,B=obb(o);let f=0,b=-1;for(let i=0;i<3;i++){const d=V.Dot(B.A[i],n);if(Math.abs(d)>b){b=Math.abs(d);f=2*i+(d>0?0:1)}}
+  const kf=fk(o,f),G=obb(ghost);let best=null,bd=-2;for(let g=0;g<6;g++){if(!ok(fk(ghost,g),kf))continue;const gn=G.A[g>>1].scale(g&1?-1:1),d=-V.Dot(gn,n);if(d>bd){bd=d;best=gn}}
+  if(best){const r=new BABYLON.Quaternion();BABYLON.Quaternion.FromUnitVectorsToRef(best,n.scale(-1),r);q.copyFrom(r.multiply(gq))}}
+ const sp=pk.pickedPoint.clone(),S=OPT.snap;['x','y','z'].forEach(a=>{if(Math.abs(n[a])<.5)sp[a]=Math.round(sp[a]/S)*S});
+ ghost.position.copyFrom(sp.add(n.scale(ext(obb(ghost),n))));ghost.material=gvm[check(ghost)?0:1]}
+scene.onPointerObservable.add(pi=>{if(pi.type!==BABYLON.PointerEventTypes.POINTERDOWN||!armed||!ghost||pi.event.button!==0||!ghost.isEnabled())return;
+ if(!check(ghost)){toast(bad);return}mk(armed,ghost.position.asArray(),ghost.rotationQuaternion.asArray(),ghost.scaling.asArray(),ghost.metadata)});
+$('#pk').oninput=e=>{if(sel)sel.metadata.k=+e.target.value};$('#pz').oninput=e=>{if(sel)sel.metadata.z=+e.target.value};
+let grp='Structure';const groups=[...new Set(Object.values(PARTS).map(d=>d.g))];
+function rpal(){$('#tabs').innerHTML=groups.map(g=>`<button data-g="${g}" class="${g===grp?'on':''}">${g}</button>`).join('');
+ $('#pl').innerHTML=Object.entries(PARTS).filter(([,d])=>d.g===grp).map(([k,d])=>`<button class="it${armed===k?' on':''}" data-p="${k}"><i class="sw" style="background:${d.col||MATS[d.m][0]}"></i><span>${d.n}<br><small>${MATS[d.m][1]} kg/m³</small></span></button>`).join('')}
+$('#pal').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.g){grp=b.dataset.g;rpal()}else if(b.dataset.p)arm(b.dataset.p)};rpal();
+
+/* physics */
+let J,jolt,phys,bi,bodies=[],cons=[],motors=[],servos=[],links=[],steer=0,gf,acc=0,dir=0;const keys=new Set();
+if(window.JoltInit)window.JoltInit().then(x=>J=x).catch(e=>toast('Physics failed to start: '+e.message));
+function mkBody(m,i){if(PARTS[m.metadata.t].spr)return null;const t=m.metadata.t,d=PARTS[t],s=m.scaling,q=m.rotationQuaternion,p=m.position,Q=QS[OPT.q];
+ const sh=d.cyl?new J.CylinderShape(s.y/2,s.x/2,.02,null):new J.BoxShape(new J.Vec3(s.x/2,s.y/2,s.z/2),Math.min(.02,s.x/2,s.y/2,s.z/2),null);
+ const bc=new J.BodyCreationSettings(sh,new J.RVec3(p.x,p.y,p.z),new J.Quat(q.x,q.y,q.z,q.w),J.EMotionType_Dynamic,1);
+ bc.mOverrideMassProperties=J.EOverrideMassProperties_CalculateInertia;bc.mMassPropertiesOverride.mMass=massOf(m);
+ bc.mFriction=d.cyl?1.2:.5;bc.mAllowSleeping=false;bc.mMotionQuality=Q.cq?J.EMotionQuality_LinearCast:J.EMotionQuality_Discrete;
+ bc.mCollisionGroup.SetGroupFilter(gf);bc.mCollisionGroup.SetGroupID(0);bc.mCollisionGroup.SetSubGroupID(i);
+ const b=bi.CreateBody(bc);bi.AddBody(b.GetID(),J.EActivation_Activate);J.destroy(bc);return b}
+const cc=(st,a,b)=>st.Create?st.Create(a,b):st.CreateConstraint(a,b);
+const strength=i=>MATS[PARTS[parts[i].metadata.t].m][2];
+function weld(i,j){const f=new J.FixedConstraintSettings();f.mAutoDetectPoint=true;const c=J.castObject(cc(f,bodies[i],bodies[j]),J.FixedConstraint);phys.AddConstraint(c);gf.DisableCollision(i,j);cons.push({c,max:1.5e5*Math.min(strength(i),strength(j))})}
+function mkh(p,a,n,b1,b2){const s=new J.HingeConstraintSettings(),R=v=>new J.Vec3(v.x,v.y,v.z);s.mSpace=J.EConstraintSpace_WorldSpace;s.mPoint1=new J.RVec3(p.x,p.y,p.z);s.mPoint2=new J.RVec3(p.x,p.y,p.z);s.mHingeAxis1=R(a);s.mHingeAxis2=R(a);s.mNormalAxis1=R(n);s.mNormalAxis2=R(n);
+ const h=J.castObject(cc(s,bodies[b1],bodies[b2]),J.HingeConstraint);phys.AddConstraint(h);gf.DisableCollision(b1,b2);return h}
+const ax=(m,v)=>v.rotateByQuaternionToRef(m.rotationQuaternion,new V());
+function hinge(iw,io){const w=parts[iw],a=ax(w,V.Up()),h=mkh(w.position,a,ax(w,V.Right()),io,iw);
+ if(parts[io].metadata.t==='motor'){h.SetMotorState(J.EMotorState_Velocity);const v=V.Cross(a,V.Up());motors.push({h,sg:Math.sign(v.z||v.x)||1})}}
+function joint(ih,io){const h=parts[ih],c=mkh(h.position,ax(h,V.Up()),ax(h,V.Right()),ih,io);
+ if(PARTS[h.metadata.t].jt===2){c.SetLimits(-.6,.6);c.SetMotorState(J.EMotorState_Position);try{const m=c.GetMotorSettings();m.mSpringSettings.mFrequency=6;m.mSpringSettings.mDamping=1}catch(e){}servos.push(c)}}
+function spring(i,e){if(e.length<2||e[0].o===e[1].o)return;const s=parts[i],A=obb(s),pt=e.slice(0,2).map(x=>A.c.add(A.A[x.f>>1].scale((x.f&1?-1:1)*A.h[x.f>>1]))),d=new J.DistanceConstraintSettings();
+ d.mSpace=J.EConstraintSpace_WorldSpace;d.mPoint1=new J.RVec3(pt[0].x,pt[0].y,pt[0].z);d.mPoint2=new J.RVec3(pt[1].x,pt[1].y,pt[1].z);d.mMinDistance=d.mMaxDistance=s.scaling.z;
+ try{d.mLimitsSpringSettings.mFrequency=s.metadata.k;d.mLimitsSpringSettings.mDamping=s.metadata.z}catch(x){d.mFrequency=s.metadata.k;d.mDamping=s.metadata.z}
+ phys.AddConstraint(cc(d,bodies[e[0].o],bodies[e[1].o]));gf.DisableCollision(e[0].o,e[1].o);const a=parts[e[0].o],b=parts[e[1].o];a.computeWorldMatrix(true);b.computeWorldMatrix(true);
+ links.push({s,a,b,pa:V.TransformCoordinates(pt[0],a.getWorldMatrix().clone().invert()),pb:V.TransformCoordinates(pt[1],b.getWorldMatrix().clone().invert())})}
+function startPlay0(){if(!J)return toast('Physics is still loading');
+ disarm();snap=ser();gz.attachToMesh(null);gz.usePointerToAttachGizmos=false;
+ const st=new J.JoltSettings(),of=new J.ObjectLayerPairFilterTable(2);of.EnableCollision(0,1);of.EnableCollision(1,1);
+ const bp=new J.BroadPhaseLayerInterfaceTable(2,2);bp.MapObjectToBroadPhaseLayer(0,new J.BroadPhaseLayer(0));bp.MapObjectToBroadPhaseLayer(1,new J.BroadPhaseLayer(1));
+ st.mObjectLayerPairFilter=of;st.mBroadPhaseLayerInterface=bp;st.mObjectVsBroadPhaseLayerFilter=new J.ObjectVsBroadPhaseLayerFilterTable(bp,2,of,2);
+ jolt=new J.JoltInterface(st);J.destroy(st);phys=jolt.GetPhysicsSystem();bi=phys.GetBodyInterface();
+ const gs=new J.BodyCreationSettings(new J.BoxShape(new J.Vec3(200,.5,200),.05,null),new J.RVec3(0,-.5,0),new J.Quat(0,0,0,1),J.EMotionType_Static,0);
+ bi.AddBody(bi.CreateBody(gs).GetID(),J.EActivation_DontActivate);J.destroy(gs);
+ const n=parts.length;gf=new J.GroupFilterTable(n);bodies=parts.map(mkBody);cons=[];motors=[];servos=[];links=[];steer=0;parts.forEach(m=>m.computeWorldMatrix(true));
+ const ends={};
+ for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const A=parts[i],B=parts[j],r=rel(obb(A),obb(B));if(!Array.isArray(r)||!r[0])continue;const c=r[0],ka=fk(A,c.fa),kb=fk(B,c.fb),sa=PARTS[A.metadata.t].spr,sb=PARTS[B.metadata.t].spr;
+  if(sa||sb){if(sa&&sb||!ok(ka,kb))continue;const[s,o,f]=sa?[i,j,c.fa]:[j,i,c.fb];(ends[s]=ends[s]||[]).push({o,f})}
+  else if(ka==='S'&&kb==='S')weld(i,j);
+  else if(ka+kb==='MH'||ka+kb==='HM')ka==='H'?hinge(i,j):hinge(j,i);
+  else if(ka==='J'&&kb==='S')joint(i,j);else if(kb==='J'&&ka==='S')joint(j,i)}
+ Object.entries(ends).forEach(([s,e])=>spring(+s,e));
+ mode='play';acc=0;dir=0;document.body.classList.add('play');$('#bm').textContent='Stop';setDrive()}
+function startPlay(){try{startPlay0()}catch(e){fail('Play: '+(e&&e.stack||e));try{if(jolt)J.destroy(jolt)}catch(x){}jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';gz.usePointerToAttachGizmos=true;if(snap)load(snap)}}
+function stopPlay(){if(mode!=='play')return;J.destroy(jolt);jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';gz.usePointerToAttachGizmos=true;load(snap)}
+const setDrive=()=>{motors.forEach(m=>m.h.SetTargetAngularVelocity(dir*12*m.sg));servos.forEach(h=>h.SetTargetAngle(steer*.5))};
+function tick(h){for(let k=cons.length;k--;){try{const l=cons[k].c.GetTotalLambdaPosition();if(Math.hypot(l.GetX(),l.GetY(),l.GetZ())/h>cons[k].max){phys.RemoveConstraint(cons[k].c);cons.splice(k,1)}}catch(e){}}jolt.Step(h,1)}
+function stepPhys(dt){acc+=dt*ts;const h=1/QS[OPT.q].hz;let n=0;while(acc>=h&&n++<10){tick(h);acc-=h}if(n>10)acc=0;
+ const c=new V();bodies.forEach((b,i)=>{if(!b)return;const p=b.GetPosition(),r=b.GetRotation(),m=parts[i];m.position.set(p.GetX(),p.GetY(),p.GetZ());m.rotationQuaternion.set(r.GetX(),r.GetY(),r.GetZ(),r.GetW());c.addInPlace(m.position)});
+ const nb=bodies.filter(Boolean).length;if(nb)cam.target=V.Lerp(cam.target,c.scale(1/nb),.08);
+ links.forEach(l=>{l.a.computeWorldMatrix(true);l.b.computeWorldMatrix(true);const p1=V.TransformCoordinates(l.pa,l.a.getWorldMatrix()),p2=V.TransformCoordinates(l.pb,l.b.getWorldMatrix()),d=p2.subtract(p1),L=d.length();if(L<1e-4)return;l.s.position.copyFrom(p1.add(p2).scale(.5));l.s.scaling.z=L;l.s.rotationQuaternion=BABYLON.Quaternion.FromLookDirectionLH(d.scale(1/L),V.Up())})}
+$('#bm').onclick=()=>mode==='play'?stopPlay():startPlay();
+$('#ts').oninput=e=>{ts=e.target.value/100;$('#tl').textContent=e.target.value+'%'};
+addEventListener('keydown',e=>{if(/INPUT|SELECT/.test(e.target.tagName)&&e.target.type!=='range')return;
+ if(e.code==='Escape'){if(armed&&cur===''){disarm();return}if(!game)return;if(cur==='')open('pause');else if(cur==='pause')open('');else if(cur!=='menu')open(back||'');return}
+ if(cur!=='')return;if(e.code==='KeyA'||e.code==='ArrowLeft')steer=1;if(e.code==='KeyD'&&!e.ctrlKey||e.code==='ArrowRight')steer=-1;if(e.code==='KeyW'||e.code==='ArrowUp')dir=1;if(e.code==='KeyS'||e.code==='ArrowDown')dir=-1;if(mode==='play')setDrive();
+ if(mode!=='build')return;if(e.code==='Digit1'){tool='move';applyTool()}if(e.code==='Digit2'){tool='rot';applyTool()}if(e.code==='Digit3'){tool='scale';applyTool()}
+ if(e.code==='KeyR')rot90('y');if(e.code==='KeyT')rot90('x');if(e.code==='KeyG')rot90('z');if(e.code==='Delete'||e.code==='KeyX')del();if(e.ctrlKey&&e.code==='KeyD'){e.preventDefault();dup()}});
+addEventListener('keyup',e=>{if(['KeyW','KeyS','ArrowUp','ArrowDown'].includes(e.code))dir=0;if(['KeyA','KeyD','ArrowLeft','ArrowRight'].includes(e.code))steer=0;if(mode==='play')setDrive()});
+cv.oncontextmenu=e=>e.preventDefault();
+let rerr=0;engine.runRenderLoop(()=>{try{const dt=Math.min(engine.getDeltaTime()/1e3,.05);if(!game)cam.alpha+=dt*.1;else if(mode==='play'&&cur==='')stepPhys(dt);else if(mode==='build'&&cur===''){follow();if(armed)updGhost()}scene.render()}catch(e){if(!rerr++)fail('Frame: '+(e&&e.stack||e))}});
+addEventListener('resize',()=>engine.resize());
+
+/* options */
+function applyOpts(){try{engine.setHardwareScalingLevel(1/(OPT.res*(devicePixelRatio||1)));if(pipe){pipe.fxaaEnabled=OPT.aa==1;pipe.samples=OPT.aa==2?4:1;pipe.bloomEnabled=!!OPT.bloom}
+ sun.shadowEnabled=OPT.sh>0;if(sgen)sgen.mapSize=OPT.sh>1?2048:1024;cam.fov=OPT.fov*Math.PI/180;applyTool();host.onOptions&&host.onOptions(OPT)}catch(e){fail('Options: '+(e&&e.stack||e))}}
+$('#optb').innerHTML=OD.map(([g,rows])=>`<h3>${g}</h3>`+rows.map(([k,l,t])=>`<div class="row"><span>${l}</span>`+(t==='chk'?`<input type="checkbox" data-k="${k}" ${OPT[k]?'checked':''}>`:Array.isArray(t)?`<select data-k="${k}">${t.map((o,i)=>`<option value="${i}" ${OPT[k]==i?'selected':''}>${o}</option>`).join('')}</select>`:`<span><input type="range" data-k="${k}" min="${t.min}" max="${t.max}" step="${t.step}" value="${OPT[k]}"> <b data-v="${k}">${(t.f||(v=>v))(OPT[k])}</b></span>`)+'</div>').join('')+(g==='Physics'?'<small>Lower quality keeps big builds smooth but may clip at high speed. Results stay close, just less precise.</small>':'')).join('');
+$('#optb').oninput=e=>{const el=e.target,k=el.dataset.k;if(!k)return;OPT[k]=el.type==='checkbox'?+el.checked:+el.value;const t=OD.flatMap(x=>x[1]).find(r=>r[0]===k)[2],v=$(`[data-v=${k}]`);if(v)v.textContent=(t.f||(x=>x))(OPT[k]);
+ try{localStorage.setItem('sprocket:opts',JSON.stringify(OPT))}catch(e){}applyOpts()};applyOpts();
+
+/* saves: IndexedDB + versioning */
+const DB=new Promise((res,rej)=>{const r=indexedDB.open('sprocket',1);r.onupgradeneeded=()=>r.result.createObjectStore('saves',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const tx=async(m,f)=>{const d=await DB;return new Promise((res,rej)=>{const t=d.transaction('saves',m),q=f(t.objectStore('saves'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
+const dbAll=()=>tx('readonly',s=>s.getAll());
+async function persist(kind,rec){await tx('readwrite',s=>kind==='del'?s.delete(rec.id):s.put(rec));
+ const all=await dbAll();try{localStorage.setItem('sprocket:saves-index',JSON.stringify(all.map(s=>({id:s.id,title:s.title,mod:s.mod,ver:s.ver}))))}catch(e){}
+ host.onPersist&&host.onPersist(kind,rec.id)}
+const MIG={}; // MIG[n]=d=>d upgraded from version n; version number is bumped automatically
+function norm(d){if(!d||typeof d!=='object'||!Array.isArray(d.parts)||!Number.isInteger(d.ver)||d.ver<1)throw Error('This file is damaged or is not a Sprocket build');
+ if(d.ver>VER)throw Error(`This build was made in a newer Sprocket (v${d.ver}). Update the game to open it`);
+ while(d.ver<VER){d=(MIG[d.ver]||(x=>x))(d);d.ver++}
+ d.parts.forEach(p=>{if(!p||!PARTS[p.t]||![p.p,p.r,p.s].every((a,k)=>Array.isArray(a)&&a.length===(k===1?4:3)&&a.every(Number.isFinite))||!p.s.every(v=>v>.01&&v<100))throw Error('This build contains invalid parts')});return d}
+async function shot(){const a=[cam.alpha,cam.beta,cam.radius,cam.target.clone()],s=sel;gz.attachToMesh(null);
+ if(parts.length){const mn=new V(1e9,1e9,1e9),mx=mn.scale(-1);parts.forEach(m=>{m.computeWorldMatrix(true);const b=m.getBoundingInfo().boundingBox;mn.minimizeInPlace(b.minimumWorld);mx.maximizeInPlace(b.maximumWorld)});
+  cam.target=V.Center(mn,mx);cam.radius=Math.max(4,mx.subtract(mn).length()*1.4)}
+ cam.alpha=-.8;cam.beta=1.15;scene.render();const d=await BABYLON.Tools.CreateScreenshotUsingRenderTargetAsync(engine,cam,{width:360,height:225},'image/jpeg');
+ [cam.alpha,cam.beta,cam.radius,cam.target]=a;if(s)gz.attachToMesh(s);return d}
+const ask=(q,def)=>new Promise(r=>{$('#aq').textContent=q;$('#ai').value=def||'';$('#ask').classList.add('on');$('#ai').focus();const f=v=>{$('#ask').classList.remove('on');r(v)};$('#ak').onclick=()=>f($('#ai').value.trim()||null);$('#ac').onclick=()=>f(null);$('#ai').onkeydown=e=>{if(e.key==='Enter')f($('#ai').value.trim()||null)}});
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let pg=0,cache=[];
+async function rsaves(){try{cache=(await dbAll()).sort((a,b)=>b.mod-a.mod)}catch(e){cache=[];toast('Saving is unavailable in this environment: '+(e&&e.message||e))}const n=Math.max(1,Math.ceil(cache.length/6));pg=Math.min(pg,n-1);
+ $('#sl').innerHTML=cache.slice(pg*6,pg*6+6).map(s=>`<div class="sv" data-id="${s.id}"><img src="${s.thumb}"><b>${esc(s.title)}</b><small>${s.parts.length} parts, ${new Date(s.mod).toLocaleDateString()}</small><div><button data-a="load">Load</button><button data-a="upd">Update</button><button data-a="ren">Rename</button><button data-a="del">Delete</button></div></div>`).join('')||'<p class="mu">No saves yet. Use Save as new to store this build.</p>';
+ $('#pgi').textContent=`${pg+1} / ${n}`}
+const rec=(id,title,thumb)=>({id,title,thumb,ver:VER,mod:Date.now(),parts:ser()});
+$('#sn').onclick=async()=>{const t=await ask('Name this build',`Build ${cache.length+1}`);if(!t)return;await persist('put',rec(crypto.randomUUID?crypto.randomUUID():Date.now()+'',t,await shot()));rsaves();toast('Saved')};
+$('#sl').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const s=cache.find(x=>x.id===b.closest('.sv').dataset.id),a=b.dataset.a;
+ try{if(a==='load'){load(norm(structuredClone(s)).parts);open('');toast('Loaded')}
+ else if(a==='upd'){await persist('put',rec(s.id,s.title,await shot()));toast('Build updated')}
+ else if(a==='ren'){const t=await ask('Rename build',s.title);if(t)await persist('put',{...s,title:t,mod:Date.now()})}
+ else if(a==='del'&&confirm(`Delete "${s.title}"?`))await persist('del',s);}catch(er){toast(er.message)}if(cur==='saves')rsaves()};
+$('#pp').onclick=()=>{pg=Math.max(0,pg-1);rsaves()};$('#pn').onclick=()=>{pg++;rsaves()};
+let cmId;$('#sl').oncontextmenu=e=>{const c=e.target.closest('.sv');if(!c)return;e.preventDefault();cmId=c.dataset.id;const m=$('#cm');m.style.display='block';m.style.left=e.clientX+'px';m.style.top=e.clientY+'px'};
+addEventListener('click',()=>$('#cm').style.display='none');
+$('#ce').onclick=()=>{const s=cache.find(x=>x.id===cmId),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({format:'sprocket',ver:s.ver,gameVersion:GV,title:s.title,thumb:s.thumb,parts:s.parts})],{type:'application/json'}));a.download=s.title.replace(/[^\w-]+/g,'_')+'.spr';a.click();URL.revokeObjectURL(a.href)};
+$('#si').onclick=()=>$('#sf').click();
+$('#sf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const d=norm(JSON.parse(await f.text()));await persist('put',{id:crypto.randomUUID?crypto.randomUUID():Date.now()+'',title:String(d.title||f.name).slice(0,40),thumb:d.thumb||'',ver:d.ver,mod:Date.now(),parts:d.parts});rsaves();toast('Imported')}catch(er){toast(er.message)}};
+
+/* menus */
+function open(id,keep){if(!keep)back=cur;cur=id||'';document.querySelectorAll('.ov').forEach(o=>o.classList.toggle('on',o.id===cur));if(cur==='saves')rsaves()}
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g)open(g.dataset.go);if(e.target.closest('.bk'))open(back||'',true)});
+info();$('#chgb').innerHTML=CHG.map(([v,n])=>`<h3>v${v}</h3><ul>${n.map(x=>`<li>${x}</li>`).join('')}</ul>`).join('');$('#ver').textContent='Version '+GV+' · '+(/WebGPU/.test(engine.getClassName())?'WebGPU':'WebGL2');
+$('#mp').onclick=()=>{game=true;document.body.classList.add('game');open('')};
+$('#mq').onclick=()=>host.quit?host.quit():(window.close(),toast('Close this tab to quit'));
+$('#bmenu').onclick=()=>open('pause');
+$('#bs').onclick=()=>{stopPlay();open('saves')};$('#ps').onclick=()=>{stopPlay();open('saves')};
+$('#pm').onclick=()=>{stopPlay();game=false;document.body.classList.remove('game');gz.attachToMesh(null);open('menu')};
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',2600)}
+</script></body></html>

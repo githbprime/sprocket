@@ -69,7 +69,7 @@ small,.mu{color:var(--m);font-size:12px}
 // Sandboxed frames (e.g. embedded previews) can block the Gamepad API, which Babylon touches when the camera attaches. Stub it so controls still work.
 try{navigator.getGamepads()}catch(e){try{Object.defineProperty(navigator,'getGamepads',{value:()=>[],configurable:true})}catch(e2){}}
 const BJS=['lib/babylon.js','https://cdn.jsdelivr.net/npm/babylonjs@7/babylon.js','https://unpkg.com/babylonjs@7/babylon.js','https://cdn.babylonjs.com/babylon.js'];
-const JLT=['lib/jolt-physics.wasm-compact.js','https://cdn.jsdelivr.net/npm/jolt-physics/dist/jolt-physics.wasm-compat.js','https://unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js'];
+const JLT=['lib/jolt-physics.wasm-compat.js', 'lib/jolt-physics.wasm-compact.js','https://cdn.jsdelivr.net/npm/jolt-physics/dist/jolt-physics.wasm-compat.js','https://unpkg.com/jolt-physics/dist/jolt-physics.wasm-compat.js'];
 const fail=m=>{let d=document.getElementById('err');if(!d){d=document.createElement('div');d.id='err';d.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99;max-width:70vw;background:#3a1418;border:1px solid #c44;color:#fdd;padding:8px 12px;border-radius:6px;font:12px monospace;white-space:pre-wrap';document.body.appendChild(d)}d.textContent+=m+'\n'};
 addEventListener('error',e=>{if(!e.error&&!e.message)return;console.error(e.error||e.message);fail((e.error&&e.error.stack)||(e.message+(e.filename?' ('+e.filename.split('/').pop()+':'+e.lineno+')':'')))});
 addEventListener('unhandledrejection',e=>e.reason instanceof Event?console.warn(e.reason):fail(String(e.reason&&e.reason.message||e.reason)));

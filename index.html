@@ -20,6 +20,7 @@ h2{margin:0 0 12px;font-size:20px;font-weight:600}h3{margin:16px 0 4px;color:var
 .bar{position:fixed;z-index:5;background:rgba(27,35,44,.94);border:1px solid var(--l);border-radius:8px;padding:6px;display:none;gap:6px;align-items:center}
 .game .bar{display:flex}
 #top{top:10px;left:50%;transform:translateX(-50%);flex-wrap:wrap;justify-content:center;max-width:96vw}
+#edit{right:10px;top:64px;flex-direction:column;align-items:stretch;width:270px;max-height:calc(100% - 140px);overflow:auto}.play #edit{display:none!important}
 #info{bottom:10px;left:50%;transform:translateX(-50%);max-width:94vw;flex-wrap:wrap;justify-content:center;font-size:13px}.play #info{display:none}.sep{width:1px;height:22px;background:var(--l)}
 #pal{left:10px;top:64px;flex-direction:column;align-items:stretch;width:224px;max-height:calc(100% - 80px);overflow:auto}
 #tabs{display:flex;gap:4px;flex-wrap:wrap}#tabs button{flex:1;padding:5px 2px;font-size:12px}
@@ -42,13 +43,14 @@ small,.mu{color:var(--m);font-size:12px}
 <div class="bar" id="top">
  <button id="bm" class="pri">Play</button><span class="sep"></span>
  <span class="bb" style="display:contents">
-  <button data-t="move" class="on" title="Move (1)">Move</button><button data-t="rot" title="Rotate (2)">Rotate</button><button data-t="scale" title="Scale (3), beams, planks and glass">Scale</button>
-  <button id="bn" title="Clear the build">New</button><button id="bd" title="Ctrl+D">Duplicate</button><button id="bx" title="Delete">Delete</button>
+  <button data-t="move" class="on" title="Move (1)">Move</button><button data-t="rot" title="Rotate (2)">Rotate</button><button data-t="scale" title="Scale (3), beams, planks and glass">Scale</button><button data-t="edit" title="Edit settings (4): power, stiffness, keys, alloy">Edit</button>
+  <button id="bu" title="Undo (Ctrl+Z)">Undo</button><button id="br" title="Redo (Ctrl+Y)">Redo</button><button id="bn" title="Clear the build">New</button><button id="bd" title="Ctrl+D">Duplicate</button><button id="bx" title="Delete">Delete</button>
  </span>
  <span class="pl">Time <input id="ts" type="range" min="0" max="200" value="100"><b id="tl">100%</b><small>W / S drive, A / D steer</small></span>
  <span class="sep"></span><button id="bs">Saves</button><button id="bmenu">Menu</button>
 </div>
 <div class="bar" id="info"><span id="inf"></span><span id="pr" style="display:none;gap:6px;align-items:center">Stiffness <input id="pk" type="range" min="1" max="20" step=".5"> Damping <input id="pz" type="range" min="0" max="1" step=".05"></span><span class="bb" style="display:contents"><button data-r="y" title="R">Turn Y 90°</button><button data-r="x" title="T">Turn X 90°</button><button data-r="z" title="G">Turn Z 90°</button></span></div>
+<div class="bar" id="edit" style="display:none"></div>
 <div class="bar" id="pal"><div id="tabs"></div><div id="pl" style="display:flex;flex-direction:column;gap:4px"></div></div>
 
 <div class="ov on" id="menu"><div class="menu"><h1>SPROCKET</h1>
@@ -88,8 +90,9 @@ const VER=1,GV='0.1.0',$=s=>document.querySelector(s),rn=n=>Math.round(n*1e4)/1e
 const host=window.SprocketHost=window.SprocketHost||{};
 const CHG=[['0.1.0',['Build mode and play mode with 0-200% time scale','Move, rotate and scale gizmos with snapping','Four structural metals, wood, standard and tempered glass, motors, wheels','Saves (IndexedDB, 6 per page) with screenshots, rename, update, delete, .spr export/import','Graphics, physics and preference options']]];
 // density kg/m3, strength multiplier
-const MATS={steel:['#8b939c',7850,1],ti:['#b9c0c9',4430,1.4],nit:['#9fb4c7',6450,1.2],tw:['#5d6068',11000,2.6],wood:['#a9794a',700,.25],glass:['#9fd4e8',2500,.12],tglass:['#7fc4dc',2500,.45],rub:['#25282c',1100,.6]};
+const MATS={steel:['#8b939c',7850,1],ti:['#b9c0c9',4430,1.4],nit:['#9fb4c7',6450,1.2],tw:['#5d6068',11000,2.6],wood:['#a9794a',700,.25],glass:['#9fd4e8',2500,.12],tglass:['#7fc4dc',2500,.45],rub:['#25282c',1100,.6],al:['#c8d0d8',2700,.55]};
 const PARTS={
+ b_al:{n:'Aluminum beam',g:'Structure',m:'al',s:[.2,.2,1],sc:1},
  b_ti:{n:'Titanium alloy beam',g:'Structure',m:'ti',s:[.2,.2,1],sc:1},
  b_nit:{n:'Nitinol beam',g:'Structure',m:'nit',s:[.2,.2,1],sc:1},
  b_steel:{n:'Steel beam',g:'Structure',m:'steel',s:[.2,.2,1],sc:1},
@@ -102,10 +105,16 @@ const PARTS={
  axle:{n:'Axle (free spin)',g:'Drive',m:'steel',s:[.3,.3,.3],col:'#8a7f5a',rot:[0,0,.7071,.7071],shaft:1,out:2,fk:{2:'M'}},
  wheel:{n:'Wheel',g:'Drive',m:'rub',s:[.7,.22,.7],cyl:1,spoke:1,rot:[0,0,.7071,.7071],fk:{0:'N',1:'N',4:'N',5:'N',2:'H',3:'H'}},
  hinge:{n:'Hinge (free swing)',g:'Joints',m:'steel',s:[.3,.3,.3],col:'#7b8794',sway:1,out:4,jt:1,fk:{4:'J'}},
- servo:{n:'Servo hinge (steering)',g:'Joints',m:'steel',s:[.3,.3,.3],col:'#2f7d6d',sway:1,out:4,jt:2,fk:{4:'J'}},
+ servo:{n:'Servo hinge (steering)',g:'Joints',m:'steel',s:[.3,.3,.3],col:'#2f7d6d',sway:1,out:4,jt:2,fk:{4:'J',5:'V'}},
  brace:{n:'Steel brace',g:'Bracing',m:'steel',s:[.08,.08,1],col:'#9aa4ae',lk:1},
  brace_t:{n:'Titanium brace',g:'Bracing',m:'ti',s:[.08,.08,1],col:'#c5ccd6',lk:1},
- wish:{n:'Wishbone (sprung arm)',g:'Suspension',m:'steel',s:[.5,.08,.8],col:'#b0bac4',prism:1,wb:1,pf:5,fk:{5:'W'}},
+ arm_hi:{n:'Upper arm',g:'Suspension',hide:1,m:'steel',s:[.5,.06,.6],col:'#b0bac4',prism:1,wb:1,nk:1,arm:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'K',5:'W'}},
+ arm_lo:{n:'Lower arm (sprung)',g:'Suspension',hide:1,m:'steel',s:[.5,.06,.6],col:'#b0bac4',prism:1,wb:1,arm:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'K',5:'W'}},
+ upr:{n:'Wheel carrier',g:'Suspension',hide:1,m:'steel',s:[.12,.56,.12],col:'#8d98a3',fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'K'}},
+ uprs:{n:'Wheel carrier (steering)',g:'Suspension',hide:1,m:'steel',s:[.12,.56,.12],col:'#2f7d6d',fk:{0:'N',1:'N',2:'N',3:'N',4:'V',5:'K'}},
+ dwb:{n:'Dual wishbone',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#b0bac4',macro:1,v:'upr',pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'W'}},
+ dwbs:{n:'Dual wishbone (steering)',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#2f7d6d',macro:1,v:'uprs',pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'V',5:'W'}},
+ wish:{n:'Wishbone (old single arm)',g:'Suspension',hide:1,m:'steel',s:[.5,.08,.8],col:'#b0bac4',prism:1,wb:1,pf:5,fk:{5:'W'}},
  spring:{n:'Coil spring',g:'Suspension',m:'steel',s:[.12,.12,1],col:'#d8dde2',lk:1,spr:1},
  core:{n:'Core',g:'Core',hide:1,m:'steel',s:[.5,.5,.5],col:'#e0a030',core:1}};
 const OD=[['Graphics',[['gpu','Renderer (reload to apply)',['WebGPU if available','WebGL2']],['res','Render scale',{min:.5,max:1.5,step:.25,f:v=>v*100+'%'}],['aa','Anti-aliasing',['Off','FXAA','MSAA 4x']],['bloom','Bloom','chk'],['sh','Shadows',['Off','Standard','High']],['fov','Field of view',{min:50,max:100,step:5,f:v=>v+'°'}]]],
@@ -113,6 +122,16 @@ const OD=[['Graphics',[['gpu','Renderer (reload to apply)',['WebGPU if available
  ['Preferences',[['snap','Move snap (m)',{min:.05,max:1,step:.05}],['vol','Master volume',{min:0,max:1,step:.05,f:v=>Math.round(v*100)+'%'}]]]];
 const OPT=Object.assign({gpu:0,res:1,aa:1,bloom:1,sh:1,fov:60,q:1,snap:.1,vol:.8},(()=>{try{return JSON.parse(localStorage.getItem('sprocket:opts')||'{}')}catch(e){return{}}})());
 const QS=[{hz:30,cq:0},{hz:60,cq:0},{hz:120,cq:1}];
+const DEFP={pw:100,sp:12,ac:40,kf:'KeyW',kb:'KeyS',rng:35,hz:6,kl:'KeyA',kr:'KeyD',al:.5};
+const PROPS={motor:[['pw','Power','%',0,100,5],['sp','Top speed',' rad/s',1,30,1],['ac','Acceleration',' rad/s²',2,200,2],['kf','Forward key'],['kb','Reverse key']],
+ servo:[['rng','Swing range','°',5,60,5],['hz','Response',' Hz',1,20,1],['kl','Left key'],['kr','Right key']],
+ spring:[['k','Stiffness',' Hz',1,20,.5],['z','Damping','',0,1,.05]],
+ nit:[['al','Alloy','',0,1,.05]]};
+const gp=(m,n)=>n==='k'||n==='z'?m.metadata[n]:((m.metadata.pr||{})[n]??DEFP[n]),setp=(m,n,v)=>{if(n==='k'||n==='z')m.metadata[n]=v;else(m.metadata.pr=m.metadata.pr||{})[n]=v};
+const propsOf=m=>{const d=PARTS[m.metadata.t];return d.jt===2?PROPS.servo:d.spr||d.wb&&!d.nk?PROPS.spring:m.metadata.t==='motor'?PROPS.motor:d.m==='nit'&&!d.lk?PROPS.nit:null};
+const mprops=m=>{const d=PARTS[m.metadata.t],M=MATS[d.m];if(d.m!=='nit')return M;const a=gp(m,'al');return[M[0],5200+2700*a,.7+a]};
+const kn=c=>String(c).replace(/^Key|^Digit/,'').replace('Arrow','Arrow '),fmtp=(n,v)=>n==='al'?`${Math.round((1-v)*100)}% Al, ${Math.round(v*100)}% Co`:v+(Object.values(PROPS).flat().find(r=>r[0]===n)[2]||'');
+let capt=null,hist=[],redo=[];
 
 /* scene */
 let cv=$('#c'),engine;
@@ -134,13 +153,14 @@ safe('Axes',()=>[[new V(1.5,.02,0),'#e5484d'],[new V(0,.02,1.5),'#4aa3ff']].forE
 /* parts */
 const parts=[],mc={};let armed=null,lk=null,hov=null,ghost=null,gq=null,bad='',sel=null,tool='move',mode='build',game=false,snap=null,ts=1,cur='menu',back=null;
 const mat=t=>mc[t]||(mc[t]=(()=>{const d=PARTS[t],m=new BABYLON.StandardMaterial(t,scene);m.diffuseColor=BABYLON.Color3.FromHexString(d.col||MATS[d.m][0]);m.specularColor=new BABYLON.Color3(.3,.3,.3);if(/glass/.test(d.m))m.alpha=.4;if(d.prism){m.backFaceCulling=false;m.twoSidedLighting=true}return m})());
+function rod(){const m=BABYLON.MeshBuilder.CreateCylinder('r',{height:1,diameter:1,tessellation:14},scene);m.rotation.x=Math.PI/2;m.bakeCurrentTransformIntoVertices();return m}
 function prism(){const T=[[-.5,-.5],[.5,-.5],[0,.5]],P=[],N=[],I=[],add=(vs,n)=>{const b=P.length/3;vs.forEach(v=>P.push(...v));vs.forEach(()=>N.push(...n));for(let i=1;i<vs.length-1;i++)I.push(b,b+i,b+i+1)};
  add(T.map(([x,z])=>[x,.5,z]),[0,1,0]);add(T.map(([x,z])=>[x,-.5,z]).reverse(),[0,-1,0]);
  for(let i=0;i<3;i++){const a=T[i],c=T[(i+1)%3],dx=c[0]-a[0],dz=c[1]-a[1],l=Math.hypot(dx,dz);add([[a[0],.5,a[1]],[a[0],-.5,a[1]],[c[0],-.5,c[1]],[c[0],.5,c[1]]],[dz/l,0,-dx/l])}
  const m=new BABYLON.Mesh('p',scene),v=new BABYLON.VertexData();v.positions=P;v.normals=N;v.indices=I;v.applyToMesh(m);return m}
-function mk(t,p,r,s,x){const d=PARTS[t],m=d.cyl?BABYLON.MeshBuilder.CreateCylinder('p',{height:1,diameter:1,tessellation:28},scene):d.prism?prism():BABYLON.MeshBuilder.CreateBox('p',{size:1},scene);
- m.material=mat(t);m.position.set(...p);m.rotationQuaternion=new BABYLON.Quaternion(...(r||d.rot||[0,0,0,1]));m.scaling.set(...(s||d.s));m.metadata={t,...((d.spr||d.wb)?{k:d.wb?3:4,z:d.wb?.6:.5}:{}),...(x&&x.k!==undefined?{k:x.k,z:x.z}:{})};sgen&&sgen.addShadowCaster(m);parts.push(m);dec(m,d);return m}
-const EC=new BABYLON.Color4(.03,.04,.06,1),SC=new BABYLON.Color4(.95,.69,.2,1),massOf=m=>{const d=PARTS[m.metadata.t],s=m.scaling;return Math.max(1,s.x*s.y*s.z*(d.cyl?.785:1)*MATS[d.m][1]*.25)};
+function mk(t,p,r,s,x){const d=PARTS[t],m=d.cyl?BABYLON.MeshBuilder.CreateCylinder('p',{height:1,diameter:1,tessellation:28},scene):d.prism?prism():d.lk?rod():BABYLON.MeshBuilder.CreateBox('p',{size:1},scene);
+ m.material=mat(t);m.position.set(...p);m.rotationQuaternion=new BABYLON.Quaternion(...(r||d.rot||[0,0,0,1]));m.scaling.set(...(s||d.s));m.metadata={t,...((d.spr||d.wb)&&!d.nk?{k:d.wb?3:4,z:d.wb?.6:.5}:{}),...(x&&x.k!==undefined?{k:x.k,z:x.z}:{}),g:x&&x.g,pr:x&&x.pr?{...x.pr}:undefined};sgen&&sgen.addShadowCaster(m);parts.push(m);dec(m,d);return m}
+const EC=new BABYLON.Color4(.03,.04,.06,1),SC=new BABYLON.Color4(.95,.69,.2,1),massOf=m=>{const d=PARTS[m.metadata.t],s=m.scaling;return Math.max(1,s.x*s.y*s.z*(d.cyl?.785:1)*mprops(m)[1]*.25)};
 const am=()=>mc._a||(mc._a=(()=>{const m=new BABYLON.StandardMaterial('a',scene);m.diffuseColor=BABYLON.Color3.FromHexString('#f2b134');m.emissiveColor=new BABYLON.Color3(.3,.18,0);return m})());
 function dec(m,d){try{m.enableEdgesRendering(.95);m.edgesWidth=2.5;m.edgesColor=EC}catch(e){}
  const kid=c=>{c.parent=m;c.material=am();c.isPickable=false},B=BABYLON.MeshBuilder;
@@ -153,21 +173,25 @@ function dec(m,d){try{m.enableEdgesRendering(.95);m.edgesWidth=2.5;m.edgesColor=
 function align(){parts.forEach(w=>{if(w.metadata.t!=='wheel')return;const mo=parts.find(o=>o.metadata.t==='motor'&&o.position.subtract(w.position).length()<.9);if(!mo)return;
  const ax=new V(0,1,0).rotateByQuaternionToRef(mo.rotationQuaternion,new V()),wa=new V(0,1,0).rotateByQuaternionToRef(w.rotationQuaternion,new V()),q=new BABYLON.Quaternion();
  BABYLON.Quaternion.FromUnitVectorsToRef(wa,ax,q);w.rotationQuaternion=q.multiply(w.rotationQuaternion);w.position=mo.position.add(ax.scale(V.Dot(w.position.subtract(mo.position),ax)))})}
-function info(){const m=sel,e=$('#inf'),pr=!armed&&m&&m.metadata.k!==undefined;$('#pr').style.display=pr?'inline-flex':'none';if(pr){$('#pk').value=m.metadata.k;$('#pz').value=m.metadata.z}if(armed){e.textContent=`Placing ${PARTS[armed].n}. ${PARTS[armed].lk?'Click a part for one end, then another part for the other end':'Click to place, R / T / G turns it'}. Esc cancels.`;return}if(!m){e.textContent='Build onto the core. Its arrow points forward (W / S drives, A / D steers). Click a part to select it, right-drag to orbit.';return}const d=PARTS[m.metadata.t],z=m.scaling;
+function rEdit(){const e=$('#edit'),m=sel,pr=m&&propsOf(m),on=tool==='edit'&&mode==='build'&&!armed&&m;e.style.display=on?'flex':'none';if(!on)return;
+ e.innerHTML=`<b>${PARTS[m.metadata.t].n}</b>`+(pr?pr.map(([n,l,u,a,b,st])=>u===undefined?`<div class="row"><span>${l}</span><button data-key="${n}">${capt&&capt.n===n?'Press a key…':kn(gp(m,n))}</button></div>`:`<div class="row"><span>${l}</span><span><input type="range" data-pn="${n}" min="${a}" max="${b}" step="${st}" value="${gp(m,n)}"> <b>${fmtp(n,gp(m,n))}</b></span></div>`).join(''):'<small>No editable settings for this part.</small>')}
+$('#edit').oninput=e=>{const n=e.target.dataset.pn;if(!n||!sel)return;setp(sel,n,+e.target.value);e.target.nextElementSibling.textContent=fmtp(n,+e.target.value)};
+$('#edit').onchange=()=>commit();$('#edit').onclick=e=>{const b=e.target.closest('[data-key]');if(b){capt={m:sel,n:b.dataset.key};rEdit()}};
+function info(){rEdit();const m=sel,e=$('#inf'),pr=!armed&&m&&m.metadata.k!==undefined;$('#pr').style.display=pr?'inline-flex':'none';if(pr){$('#pk').value=m.metadata.k;$('#pz').value=m.metadata.z}if(armed){e.textContent=`Placing ${PARTS[armed].n}. ${PARTS[armed].lk?'Click a part for one end, then another part for the other end':'Click to place, R / T / G turns it'}. Esc cancels.`;return}if(!m){e.textContent='Build onto the core. Its arrow points forward (W / S drives, A / D steers). Click a part to select it, right-drag to orbit.';return}const d=PARTS[m.metadata.t],z=m.scaling;
  e.textContent=`${d.n}, ${massOf(m).toFixed(0)} kg, ${z.x.toFixed(2)} x ${z.y.toFixed(2)} x ${z.z.toFixed(2)} m`+(d.sway?'. The curved arrows show the swing. Attach the swinging part to its front face':d.shaft?'. Wheels go on the arrow side':d.cyl?'. The stripe shows spin':d.wb?'. The flat edge hinges onto the build and springs; mount wheels at the tip':d.core?'. The arrow shows forward. Drag the core to move the whole build':d.lk?(d.spr?'. Adjust stiffness and damping below':'. Adds a rigid link between its two ends'):'')+(tool==='scale'&&d.sc?'. Drag a dot to stretch that side; hold Alt to stretch both sides':'')}
-function rot90(a){const q=BABYLON.Quaternion.RotationAxis(a==='x'?V.Right():a==='y'?V.Up():V.Forward(),Math.PI/2);if(armed){gq=q.multiply(gq);userRot=true;return}if(!sel||mode!=='build'||fixed(sel))return;sel.rotationQuaternion=q.multiply(sel.rotationQuaternion);fix()}
-document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>rot90(b.dataset.r));addEventListener('pointerup',()=>setTimeout(()=>{fix();info()},0));
-const ser=()=>parts.map(m=>{const l=m.metadata.link,o={t:m.metadata.t,p:m.position.asArray().map(rn),r:m.rotationQuaternion.asArray().map(rn),s:m.scaling.asArray().map(rn),k:m.metadata.k,z:m.metadata.z};if(l){o.a=parts.indexOf(l.a);o.b=parts.indexOf(l.b);o.la=l.la.asArray().map(rn);o.lb=l.lb.asArray().map(rn)}return o});
+function rot90(a){const q=BABYLON.Quaternion.RotationAxis(a==='x'?V.Right():a==='y'?V.Up():V.Forward(),Math.PI/2);if(armed){gq=q.multiply(gq);userRot=true;return}if(!sel||mode!=='build'||fixed(sel))return;sel.rotationQuaternion=q.multiply(sel.rotationQuaternion);fix();commit()}
+document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>rot90(b.dataset.r));addEventListener('pointerup',()=>setTimeout(()=>{fix();commit();info()},0));
+const ser=()=>parts.map(m=>{const l=m.metadata.link,o={t:m.metadata.t,p:m.position.asArray().map(rn),r:m.rotationQuaternion.asArray().map(rn),s:m.scaling.asArray().map(rn),k:m.metadata.k,z:m.metadata.z,g:m.metadata.g,pr:m.metadata.pr};if(l){o.a=parts.indexOf(l.a);o.b=parts.indexOf(l.b);o.la=l.la.asArray().map(rn);o.lb=l.lb.asArray().map(rn)}return o});
 const fixed=m=>m&&m.metadata.link,isCore=m=>m&&PARTS[m.metadata.t].core;let cs=null,shiftDown=false,userRot=false;
 addEventListener('keydown',e=>shiftDown=e.shiftKey);addEventListener('keyup',e=>shiftDown=e.shiftKey);
 function coreSync(){const c=parts.find(isCore);if(!c)return;const p1=c.position,q1=c.rotationQuaternion;
  if(cs&&(!p1.equals(cs.p)||!q1.equals(cs.q))){const dq=q1.multiply(BABYLON.Quaternion.Inverse(cs.q));parts.forEach(m=>{if(m===c||m.metadata.link)return;m.position.copyFrom(p1.add(m.position.subtract(cs.p).rotateByQuaternionToRef(dq,new V())));m.rotationQuaternion=dq.multiply(m.rotationQuaternion);m._ok=null})}
  cs={p:p1.clone(),q:q1.clone()}}
 function lift(){coreSync();let lo=0;parts.forEach(p=>{if(!p.metadata.link)lo=Math.min(lo,p.position.y-ext(obb(p),V.Up()))});if(lo<-1e-3){parts.find(isCore).position.y-=lo;coreSync()}}
-function lay(m,p1,p2){const d=p2.subtract(p1),L=d.length();if(L<1e-4)return;m.position.copyFrom(p1.add(p2).scale(.5));m.scaling.z=L;m.rotationQuaternion=BABYLON.Quaternion.FromLookDirectionLH(d.scale(1/L),Math.abs(d.y/L)>.99?V.Right():V.Up())}
+function lay(m,p1,p2){const d=p2.subtract(p1),L=d.length();if(L<1e-4)return;m.position.copyFrom(p1.add(p2).scale(.5));m.scaling.z=L;const q=new BABYLON.Quaternion();BABYLON.Quaternion.FromUnitVectorsToRef(V.Forward(),d.scale(1/L),q);m.rotationQuaternion=q}
 const loc=(m,w)=>{m.computeWorldMatrix(true);return V.TransformCoordinates(w,m.getWorldMatrix().clone().invert())};
-function updLinks(){parts.forEach(m=>{const l=m.metadata.link;if(!l)return;l.a.computeWorldMatrix(true);l.b.computeWorldMatrix(true);lay(m,V.TransformCoordinates(l.la,l.a.getWorldMatrix()),V.TransformCoordinates(l.lb,l.b.getWorldMatrix()))})}
-function mkLink(t,a,b,la,lb,x){const m=mk(t,[0,0,0],null,null,x);m.metadata.link={a,b,la,lb};updLinks();return m}
+function updLinks(){parts.forEach(m=>{const l=m.metadata.link;if(!l)return;l.a.computeWorldMatrix(true);l.b.computeWorldMatrix(true);const p1=V.TransformCoordinates(l.la,l.a.getWorldMatrix()),p2=V.TransformCoordinates(l.lb,l.b.getWorldMatrix());lay(m,p1,p2);if(l.caps){l.caps[0].position.copyFrom(p1);l.caps[1].position.copyFrom(p2);l.caps.forEach(c=>c.scaling.setAll(m.scaling.x*1.8))}})}
+function mkLink(t,a,b,la,lb,x){const m=mk(t,[0,0,0],null,null,x),caps=[0,1].map(()=>{const c=BABYLON.MeshBuilder.CreateSphere('cap',{diameter:1,segments:8},scene);c.material=am();c.isPickable=false;return c});m.metadata.link={a,b,la,lb,caps};m.onDisposeObservable.add(()=>caps.forEach(c=>c.dispose()));updLinks();return m}
 function load(a){cs=null;gz.attachToMesh(null);parts.forEach(m=>m.dispose());parts.length=0;const mp=[];a.forEach((o,i)=>{if(!PARTS[o.t].lk)mp[i]=mk(o.t,o.p,o.r,o.s,o)});a.forEach(o=>{if(PARTS[o.t].lk&&mp[o.a]&&mp[o.b])mkLink(o.t,mp[o.a],mp[o.b],new V(...o.la),new V(...o.lb),o)});if(!parts.some(p=>p.metadata.t==='core'))mk('core',[0,.5,0])}
 
 /* gizmos */
@@ -178,10 +202,14 @@ function applyTool(){gz.positionGizmoEnabled=tool==='move';gz.rotationGizmoEnabl
  document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===tool));try{info()}catch(e){}}
 gz.onAttachedToMeshObservable.add(m=>{parts.forEach(p=>{try{p.edgesColor=EC;p.edgesWidth=2.5}catch(e){}});if(m)try{m.edgesColor=SC;m.edgesWidth=7}catch(e){}sel=m;if(m&&!m._ok)m._ok=[m.position.clone(),m.rotationQuaternion.clone(),m.scaling.clone()];info();if(m&&tool==='scale'&&!PARTS[m.metadata.t].sc)toast('This part cannot be scaled');applyTool()});safe('Gizmos',applyTool);
 document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tool=b.dataset.t;applyTool()});
-function del(){if(!sel)return;const m=sel;if(PARTS[m.metadata.t].core){toast('The core cannot be deleted');return}gz.attachToMesh(null);[m,...parts.filter(p=>p.metadata.link&&(p.metadata.link.a===m||p.metadata.link.b===m))].forEach(x=>{parts.splice(parts.indexOf(x),1);x.dispose()})}
-function dup(){if(!sel)return;if(fixed(sel)||isCore(sel)){toast('This part cannot be duplicated');return}const m=sel,n=mk(m.metadata.t,m.position.asArray(),m.rotationQuaternion.asArray(),m.scaling.asArray(),m.metadata);for(let k=0;k<80&&!check(n);k++)n.position.x+=.5;gz.attachToMesh(n)}
-$('#bx').onclick=del;$('#bd').onclick=dup;$('#bn').onclick=()=>{if(mode==='build'&&confirm('Start a new build? Unsaved changes are lost.')){disarm();load([])}};
-const EPS=.02,ok=(a,b)=>a==='W'&&b==='S'||a==='S'&&b==='W'||a==='S'&&b==='S'||a==='M'&&b==='H'||a==='H'&&b==='M'||a==='J'&&b==='S'||a==='S'&&b==='J',fk=(m,f)=>(PARTS[m.metadata.t].fk||{})[f]||'S';
+function del(){if(!sel)return;const m=sel;if(PARTS[m.metadata.t].core){toast('The core cannot be deleted');return}gz.attachToMesh(null);[m,...parts.filter(p=>p!==m&&(p.metadata.link&&(p.metadata.link.a===m||p.metadata.link.b===m)||m.metadata.g&&p.metadata.g===m.metadata.g))].forEach(x=>{parts.splice(parts.indexOf(x),1);x.dispose()});commit()}
+function commit(){if(mode!=='build'||!game)return;const j=JSON.stringify(ser());if(hist[hist.length-1]===j)return;hist.push(j);if(hist.length>100)hist.shift();redo.length=0}
+const resync=()=>{if(hist.length)hist[hist.length-1]=JSON.stringify(ser())};
+function undo(){if(mode!=='build'||hist.length<2)return;disarm();redo.push(hist.pop());load(JSON.parse(hist[hist.length-1]));resync()}
+function redoF(){if(mode!=='build'||!redo.length)return;disarm();const j=redo.pop();hist.push(j);load(JSON.parse(j));resync()}
+function dup(){if(!sel)return;if(fixed(sel)||isCore(sel)){toast('This part cannot be duplicated');return}const m=sel,n=mk(m.metadata.t,m.position.asArray(),m.rotationQuaternion.asArray(),m.scaling.asArray(),m.metadata);for(let k=0;k<80&&!check(n);k++)n.position.x+=.5;gz.attachToMesh(n);commit()}
+$('#bu').onclick=undo;$('#br').onclick=redoF;$('#bx').onclick=del;$('#bd').onclick=dup;$('#bn').onclick=()=>{if(mode==='build'&&confirm('Start a new build? Unsaved changes are lost.')){disarm();load([]);commit()}};
+const EPS=.02,ok=(a,b)=>a==='K'&&b==='K'||a==='V'&&b==='V'||a==='W'&&b==='S'||a==='S'&&b==='W'||a==='S'&&b==='S'||a==='M'&&b==='H'||a==='H'&&b==='M'||a==='J'&&b==='S'||a==='S'&&b==='J',fk=(m,f)=>(PARTS[m.metadata.t].fk||{})[f]||'S';
 // Face kinds: S structural, M motor shaft, H wheel hub, J joint pivot, N nothing. ok() is the allowed-pair table.
 const obb=m=>{const q=m.rotationQuaternion,s=m.scaling;return{c:m.position,A:[V.Right(),V.Up(),V.Forward()].map(v=>v.rotateByQuaternionToRef(q,new V())),h:[s.x/2,s.y/2,s.z/2]}};
 const ext=(o,n)=>o.h.reduce((s,h,i)=>s+h*Math.abs(V.Dot(o.A[i],n)),0);
@@ -204,17 +232,18 @@ function lkGhost(){const pk=scene.pick(scene.pointerX,scene.pointerY,m=>parts.in
  if(!pk.hit){ghost.setEnabled(false);mark.setEnabled(false);return}
  const n=pk.getNormal(true)||V.Up(),B=obb(pk.pickedMesh),sp=shiftOff(faceCtr(B,faceOf(B,n)),pk,n);hov={m:pk.pickedMesh,w:sp};mark.setEnabled(true);mark.position.copyFrom(sp);
  if(!lk){ghost.setEnabled(false);return}ghost.setEnabled(true);lay(ghost,lk.w,sp);ghost.material=gvm[hov.m!==lk.m&&V.Distance(lk.w,sp)>=.3?0:1]}
+function spawnMac(t,g){const id='g'+Date.now(),Q=g.rotationQuaternion;[['arm_hi',[0,.25,-.06]],['arm_lo',[0,-.25,-.06]],[PARTS[t].v,[0,0,.3]]].forEach(([k,o])=>mk(k,g.position.add(new V(...o).rotateByQuaternionToRef(Q,new V())).asArray(),Q.asArray(),null,{g:id}))}
 function arm(t){disarm();armed=t;userRot=false;gq=new BABYLON.Quaternion(...(PARTS[t].rot||[0,0,0,1]));ghost=mk(t,[0,-50,0]);parts.splice(parts.indexOf(ghost),1);ghost.isPickable=false;gz.attachToMesh(null);gz.usePointerToAttachGizmos=false;rpal();info()}
 function disarm(){if(ghost)ghost.dispose();ghost=armed=lk=hov=null;mark.setEnabled(false);gz.usePointerToAttachGizmos=mode==='build';rpal();info()}
 const lf=f=>[V.Right(),V.Up(),V.Forward()][f>>1].scale(f&1?-1:1);
 function orient(d,n,kf,at){let bq=null,bs=-9;const cd=cam.position.subtract(at).normalize();cd.y*=.5;
- for(let g=0;g<6;g++){if(g===d.out&&kf==='S'||!ok(fk(ghost,g),kf))continue;const r=new BABYLON.Quaternion();BABYLON.Quaternion.FromUnitVectorsToRef(lf(g).rotateByQuaternionToRef(gq,new V()),n.scale(-1),r);const q0=r.multiply(gq);
-  for(let k=0;k<4;k++){const qk=BABYLON.Quaternion.RotationAxis(n,k*Math.PI/2).multiply(q0);let sc=V.Dot(lf(d.out).rotateByQuaternionToRef(qk,new V()),cd);if(d.sway)sc+=.5*lf(2).rotateByQuaternionToRef(qk,new V()).y;if(sc>bs+1e-6){bs=sc;bq=qk}}}
+ for(let g=0;g<6;g++){if(g===d.out&&kf==='S'||d.pf!==undefined&&g!==d.pf||!ok(fk(ghost,g),kf))continue;const r=new BABYLON.Quaternion();BABYLON.Quaternion.FromUnitVectorsToRef(lf(g).rotateByQuaternionToRef(gq,new V()),n.scale(-1),r);const q0=r.multiply(gq);
+  for(let k=0;k<4;k++){const qk=BABYLON.Quaternion.RotationAxis(n,k*Math.PI/2).multiply(q0);let sc=V.Dot(lf(d.out).rotateByQuaternionToRef(qk,new V()),cd);if(d.sway||d.up)sc+=.5*lf(2).rotateByQuaternionToRef(qk,new V()).y;if(sc>bs+1e-6){bs=sc;bq=qk}}}
  return bq}
 // Scale handles: a dot on each face; dragging it stretches that side only (Alt = both sides)
 const hdl=[0,1,2,3,4,5].map(f=>{const h=BABYLON.MeshBuilder.CreateSphere('hd',{diameter:1,segments:8},scene);h.material=am();h.isPickable=false;h.renderingGroupId=1;h.setEnabled(false);h.metadata={f};return h});
 let drag=null;
-function updHandles(){const m=sel,on=mode==='build'&&!armed&&tool==='scale'&&m&&PARTS[m.metadata.t].sc&&cur==='';hdl.forEach(h=>{if(!on){h.setEnabled(false);return}h.setEnabled(true);h.position.copyFrom(faceCtr(obb(m),h.metadata.f));h.scaling.setAll(Math.max(.03,V.Distance(cam.position,h.position)*.014))})}
+function updHandles(){const m=sel,on=mode==='build'&&!armed&&tool==='scale'&&m&&PARTS[m.metadata.t].sc&&cur==='';hdl.forEach(h=>{if(!on){h.setEnabled(false);return}h.setEnabled(true);h.position.copyFrom(faceCtr(obb(m),h.metadata.f));h.scaling.setAll(Math.max(.07,V.Distance(cam.position,h.position)*.03))})}
 scene.onPointerObservable.add(pi=>{const E=pi.event,T=BABYLON.PointerEventTypes;
  if(pi.type===T.POINTERDOWN&&E.button===0&&!armed&&tool==='scale'&&sel&&PARTS[sel.metadata.t].sc){const pk=scene.pick(scene.pointerX,scene.pointerY,m=>hdl.includes(m)&&m.isEnabled());
   if(pk.hit){const f=pk.pickedMesh.metadata.f,B=obb(sel),i=f>>1;drag={i,sg:f&1?-1:1,A:B.A[i].clone(),c:sel.position.clone(),L:sel.scaling.asArray()[i],P:faceCtr(B,f)}}}
@@ -238,11 +267,11 @@ function updGhost(){if(!ghost)return;if(PARTS[armed].lk)return lkGhost();const p
 scene.onPointerObservable.add(pi=>{if(pi.type!==BABYLON.PointerEventTypes.POINTERDOWN||!armed||!ghost||pi.event.button!==0)return;
  if(PARTS[armed].lk){if(!hov)return;if(!lk){lk=hov;return}if(hov.m===lk.m||V.Distance(hov.w,lk.w)<.3){toast('Pick a different part, at least 0.3 m away');return}
   mkLink(armed,lk.m,hov.m,loc(lk.m,lk.w),loc(hov.m,hov.w));lk=null;return}
- if(!ghost.isEnabled())return;if(!check(ghost)||!touchN){toast(bad||'Attach it to the build');return}mk(armed,ghost.position.asArray(),ghost.rotationQuaternion.asArray(),ghost.scaling.asArray(),ghost.metadata)});
+ if(!ghost.isEnabled())return;if(!check(ghost)||!touchN){toast(bad||'Attach it to the build');return}PARTS[armed].macro?spawnMac(armed,ghost):mk(armed,ghost.position.asArray(),ghost.rotationQuaternion.asArray(),ghost.scaling.asArray(),ghost.metadata);commit()});
 $('#pk').oninput=e=>{if(sel)sel.metadata.k=+e.target.value};$('#pz').oninput=e=>{if(sel)sel.metadata.z=+e.target.value};
 let grp='Structure';const groups=[...new Set(Object.values(PARTS).filter(d=>!d.hide).map(d=>d.g))];
 function rpal(){$('#tabs').innerHTML=groups.map(g=>`<button data-g="${g}" class="${g===grp?'on':''}">${g}</button>`).join('');
- $('#pl').innerHTML=Object.entries(PARTS).filter(([,d])=>d.g===grp).map(([k,d])=>`<button class="it${armed===k?' on':''}" data-p="${k}"><i class="sw" style="background:${d.col||MATS[d.m][0]}"></i><span>${d.n}<br><small>${MATS[d.m][1]} kg/m³</small></span></button>`).join('')}
+ $('#pl').innerHTML=Object.entries(PARTS).filter(([,d])=>d.g===grp&&!d.hide).map(([k,d])=>`<button class="it${armed===k?' on':''}" data-p="${k}"><i class="sw" style="background:${d.col||MATS[d.m][0]}"></i><span>${d.n}<br><small>${MATS[d.m][1]} kg/m³</small></span></button>`).join('')}
 $('#pal').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.g){grp=b.dataset.g;rpal()}else if(b.dataset.p)arm(b.dataset.p)};rpal();
 
 /* physics */
@@ -256,21 +285,22 @@ function mkBody(m,i){if(PARTS[m.metadata.t].lk)return null;const t=m.metadata.t,
  bc.mCollisionGroup.SetGroupFilter(gf);bc.mCollisionGroup.SetGroupID(0);bc.mCollisionGroup.SetSubGroupID(i);
  const b=bi.CreateBody(bc);bi.AddBody(b.GetID(),J.EActivation_Activate);J.destroy(bc);return b}
 const cc=(st,a,b)=>st.Create?st.Create(a,b):st.CreateConstraint(a,b);
-const strength=i=>MATS[PARTS[parts[i].metadata.t].m][2];
+const strength=i=>mprops(parts[i])[2];
 function weld(i,j,k){const f=new J.FixedConstraintSettings();f.mAutoDetectPoint=true;const c=J.castObject(cc(f,bodies[i],bodies[j]),J.FixedConstraint);phys.AddConstraint(c);gf.DisableCollision(i,j);cons.push({c,max:1.5e5*Math.min(strength(i),strength(j),k===undefined?9:strength(k))})}
 function mkh(p,a,n,b1,b2){const s=new J.HingeConstraintSettings(),R=v=>new J.Vec3(v.x,v.y,v.z);s.mSpace=J.EConstraintSpace_WorldSpace;s.mPoint1=new J.RVec3(p.x,p.y,p.z);s.mPoint2=new J.RVec3(p.x,p.y,p.z);s.mHingeAxis1=R(a);s.mHingeAxis2=R(a);s.mNormalAxis1=R(n);s.mNormalAxis2=R(n);
  const h=J.castObject(cc(s,bodies[b1],bodies[b2]),J.HingeConstraint);phys.AddConstraint(h);gf.DisableCollision(b1,b2);return h}
 const ax=(m,v)=>v.rotateByQuaternionToRef(m.rotationQuaternion,new V());
 function hinge(iw,io){const w=parts[iw],a=ax(w,V.Up()),h=mkh(w.position,a,ax(w,V.Right()),io,iw);
- if(parts[io].metadata.t==='motor'){h.SetMotorState(J.EMotorState_Velocity);const v=V.Cross(a,V.Up()),fw=ax(parts.find(isCore)||w,V.Forward());motors.push({h,sg:Math.sign(V.Dot(v,fw))||1})}}
+ if(parts[io].metadata.t==='motor'){h.SetMotorState(J.EMotorState_Velocity);const v=V.Cross(a,V.Up()),fw=ax(parts.find(isCore)||w,V.Forward());{const mo=parts[io],T=1500*gp(mo,'pw')/100;try{const ms=h.GetMotorSettings();ms.mMaxTorqueLimit=T;ms.mMinTorqueLimit=-T}catch(e){}motors.push({h,sg:Math.sign(V.Dot(v,fw))||1,v:0,sp:gp(mo,'sp'),ac:gp(mo,'ac'),kf:gp(mo,'kf'),kb:gp(mo,'kb')})}}}
 function joint(ih,io){const h=parts[ih],O=obb(h),a=ax(h,V.Up()),c=mkh(O.c.add(O.A[2].scale(O.h[2])),a,ax(h,V.Right()),ih,io);
- if(PARTS[h.metadata.t].jt===2){c.SetLimits(-.6,.6);c.SetMotorState(J.EMotorState_Position);try{const m=c.GetMotorSettings();m.mSpringSettings.mFrequency=6;m.mSpringSettings.mDamping=1}catch(e){}servos.push({h:c,sg:Math.sign(a.y)||1})}}
+ if(PARTS[h.metadata.t].jt===2){const R=gp(h,'rng')*Math.PI/180;c.SetLimits(-R-.05,R+.05);c.SetMotorState(J.EMotorState_Position);try{const m=c.GetMotorSettings();m.mSpringSettings.mFrequency=gp(h,'hz');m.mSpringSettings.mDamping=1}catch(e){}servos.push({h:c,sg:Math.sign(a.y)||1,rng:R,kl:gp(h,'kl'),kr:gp(h,'kr')})}}
 function spring(m,ia,ib){const l=m.metadata.link,a=parts[ia],b=parts[ib];[a,b].forEach(x=>x.computeWorldMatrix(true));const p1=V.TransformCoordinates(l.la,a.getWorldMatrix()),p2=V.TransformCoordinates(l.lb,b.getWorldMatrix()),d=new J.DistanceConstraintSettings();
  d.mSpace=J.EConstraintSpace_WorldSpace;d.mPoint1=new J.RVec3(p1.x,p1.y,p1.z);d.mPoint2=new J.RVec3(p2.x,p2.y,p2.z);d.mMinDistance=d.mMaxDistance=V.Distance(p1,p2);
  try{d.mLimitsSpringSettings.mFrequency=m.metadata.k;d.mLimitsSpringSettings.mDamping=m.metadata.z}catch(x){d.mFrequency=m.metadata.k;d.mDamping=m.metadata.z}
  phys.AddConstraint(cc(d,bodies[ia],bodies[ib]));gf.DisableCollision(ia,ib)}
-function wbone(iw,io){const w=parts[iw],O=obb(w),h=mkh(O.c.add(O.A[2].scale(-O.h[2])),ax(w,V.Right()),ax(w,V.Up()),io,iw);h.SetLimits(-.6,.6);h.SetMotorState(J.EMotorState_Position);h.SetTargetAngle(0);
- try{const m=h.GetMotorSettings();m.mSpringSettings.mFrequency=w.metadata.k;m.mSpringSettings.mDamping=w.metadata.z}catch(e){}}
+function wbone(iw,io){const w=parts[iw],O=obb(w),h=mkh(O.c.add(O.A[2].scale(-O.h[2])),ax(w,V.Right()),ax(w,V.Up()),io,iw);h.SetLimits(-.6,.6);
+ if(w.metadata.k!==undefined){h.SetMotorState(J.EMotorState_Position);h.SetTargetAngle(0);try{const m=h.GetMotorSettings();m.mSpringSettings.mFrequency=w.metadata.k;m.mSpringSettings.mDamping=w.metadata.z}catch(e){}}}
+function ktie(i,j){const ia=PARTS[parts[i].metadata.t].arm?i:j,iu=ia===i?j:i,a=parts[ia],O=obb(a);mkh(O.c.add(O.A[2].scale(O.h[2])),ax(a,V.Right()),ax(a,V.Up()),iu,ia)}
 function startPlay0(){if(!J)return toast('Physics is still loading');
  disarm();snap=ser();gz.attachToMesh(null);gz.usePointerToAttachGizmos=false;
  const st=new J.JoltSettings(),of=new J.ObjectLayerPairFilterTable(2);of.EnableCollision(0,1);of.EnableCollision(1,1);
@@ -282,28 +312,29 @@ function startPlay0(){if(!J)return toast('Physics is still loading');
  const n=parts.length;gf=new J.GroupFilterTable(n);bodies=parts.map(mkBody);cons=[];motors=[];servos=[];links=[];steer=0;parts.forEach(m=>m.computeWorldMatrix(true));
  const adj=[],ed=(i,j)=>{(adj[i]=adj[i]||[]).push(j);(adj[j]=adj[j]||[]).push(i)};
  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const A=parts[i],B=parts[j];if(A.metadata.link||B.metadata.link)continue;const r=rel(obb(A),obb(B));if(!Array.isArray(r)||!r[0])continue;const c=r[0],ka=fk(A,c.fa),kb=fk(B,c.fb);if(!ok(ka,kb))continue;ed(i,j);
-  if(ka==='S'&&kb==='S')weld(i,j);
+  if(ka==='S'&&kb==='S'||ka==='V'&&kb==='V')weld(i,j);
   else if(ka+kb==='MH'||ka+kb==='HM')ka==='H'?hinge(i,j):hinge(j,i);
-  else if(ka==='W')wbone(i,j);else if(kb==='W')wbone(j,i);else if(ka==='J')joint(i,j);else joint(j,i)}
+  else if(ka==='K')ktie(i,j);else if(ka==='W')wbone(i,j);else if(kb==='W')wbone(j,i);else if(ka==='J')joint(i,j);else joint(j,i)}
  parts.forEach((m,i)=>{const l=m.metadata.link;if(!l)return;const a=parts.indexOf(l.a),b=parts.indexOf(l.b);if(a<0||b<0||!bodies[a]||!bodies[b])return;ed(a,b);PARTS[m.metadata.t].spr?spring(m,a,b):weld(a,b,i)});
  const core=parts.findIndex(p=>p.metadata.t==='core'),seen=new Set([core]),stk=[core];while(stk.length){const i=stk.pop();(adj[i]||[]).forEach(j=>{if(!seen.has(j)){seen.add(j);stk.push(j)}})}
  const loose=parts.filter((p,i)=>!p.metadata.link&&!seen.has(i)).length;if(loose)toast(`${loose} part${loose>1?'s are':' is'} not attached to the core`);
  mode='play';acc=0;dir=0;document.body.classList.add('play');$('#bm').textContent='Stop';setDrive()}
 function startPlay(){try{startPlay0()}catch(e){fail('Play: '+(e&&e.stack||e));try{if(jolt)J.destroy(jolt)}catch(x){}jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';gz.usePointerToAttachGizmos=true;if(snap)load(snap)}}
-function stopPlay(){if(mode!=='play')return;J.destroy(jolt);jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';gz.usePointerToAttachGizmos=true;load(snap)}
-const setDrive=()=>{motors.forEach(m=>m.h.SetTargetAngularVelocity(dir*12*m.sg));servos.forEach(s=>s.h.SetTargetAngle(steer*.5*s.sg))};
-function tick(h){for(let k=cons.length;k--;){try{const l=cons[k].c.GetTotalLambdaPosition();if(Math.hypot(l.GetX(),l.GetY(),l.GetZ())/h>cons[k].max){phys.RemoveConstraint(cons[k].c);cons.splice(k,1)}}catch(e){}}jolt.Step(h,1)}
+function stopPlay(){if(mode!=='play')return;J.destroy(jolt);jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';gz.usePointerToAttachGizmos=true;load(snap);resync()}
+const setDrive=()=>{};
+function drive(h){const dn=c=>keys.has(c)?1:0;motors.forEach(m=>{const t=(dn(m.kf)-dn(m.kb))*m.sp*m.sg;m.v+=Math.max(-m.ac*h,Math.min(m.ac*h,t-m.v));m.h.SetTargetAngularVelocity(m.v)});servos.forEach(s=>s.h.SetTargetAngle((dn(s.kr)-dn(s.kl))*s.rng*s.sg))}
+function tick(h){for(let k=cons.length;k--;){try{const l=cons[k].c.GetTotalLambdaPosition();if(Math.hypot(l.GetX(),l.GetY(),l.GetZ())/h>cons[k].max){phys.RemoveConstraint(cons[k].c);cons.splice(k,1)}}catch(e){}}drive(h);jolt.Step(h,1)}
 function stepPhys(dt){acc+=dt*ts;const h=1/QS[OPT.q].hz;let n=0;while(acc>=h&&n++<10){tick(h);acc-=h}if(n>10)acc=0;
  const c=new V();bodies.forEach((b,i)=>{if(!b)return;const p=b.GetPosition(),r=b.GetRotation(),m=parts[i];m.position.set(p.GetX(),p.GetY(),p.GetZ());m.rotationQuaternion.set(r.GetX(),r.GetY(),r.GetZ(),r.GetW());c.addInPlace(m.position)});
  const nb=bodies.filter(Boolean).length;if(nb)cam.setTarget(V.Lerp(cam.target,c.scale(1/nb),.08),false,false,true);updLinks()}
 $('#bm').onclick=()=>mode==='play'?stopPlay():startPlay();
 $('#ts').oninput=e=>{ts=e.target.value/100;$('#tl').textContent=e.target.value+'%'};
-addEventListener('keydown',e=>{if(/INPUT|SELECT/.test(e.target.tagName)&&e.target.type!=='range')return;
+addEventListener('keydown',e=>{if(/INPUT|SELECT/.test(e.target.tagName)&&e.target.type!=='range')return;if(capt){e.preventDefault();if(e.code!=='Escape'){setp(capt.m,capt.n,e.code);commit()}capt=null;rEdit();return}keys.add(e.code);
  if(e.code==='Escape'){if(armed&&cur===''){disarm();return}if(!game)return;if(cur==='')open('pause');else if(cur==='pause')open('');else if(cur!=='menu')open(back||'');return}
- if(cur!=='')return;if(e.code==='KeyA'||e.code==='ArrowLeft')steer=-1;if(e.code==='KeyD'&&!e.ctrlKey||e.code==='ArrowRight')steer=1;if(e.code==='KeyW'||e.code==='ArrowUp')dir=1;if(e.code==='KeyS'||e.code==='ArrowDown')dir=-1;if(mode==='play')setDrive();
- if(mode!=='build')return;if(e.code==='Digit1'){tool='move';applyTool()}if(e.code==='Digit2'){tool='rot';applyTool()}if(e.code==='Digit3'){tool='scale';applyTool()}
+ if(cur!=='')return;if(e.ctrlKey&&e.code==='KeyZ'&&!e.shiftKey){e.preventDefault();undo();return}if(e.ctrlKey&&(e.code==='KeyY'||e.code==='KeyZ'&&e.shiftKey)){e.preventDefault();redoF();return}if(e.code==='KeyA'||e.code==='ArrowLeft')steer=-1;if(e.code==='KeyD'&&!e.ctrlKey||e.code==='ArrowRight')steer=1;if(e.code==='KeyW'||e.code==='ArrowUp')dir=1;if(e.code==='KeyS'||e.code==='ArrowDown')dir=-1;if(mode==='play')setDrive();
+ if(mode!=='build')return;if(e.code==='Digit1'){tool='move';applyTool()}if(e.code==='Digit2'){tool='rot';applyTool()}if(e.code==='Digit3'){tool='scale';applyTool()}if(e.code==='Digit4'){tool='edit';applyTool()}
  if(e.code==='KeyR')rot90('y');if(e.code==='KeyT')rot90('x');if(e.code==='KeyG')rot90('z');if(e.code==='Delete'||e.code==='KeyX')del();if(e.ctrlKey&&e.code==='KeyD'){e.preventDefault();dup()}});
-addEventListener('keyup',e=>{if(['KeyW','KeyS','ArrowUp','ArrowDown'].includes(e.code))dir=0;if(['KeyA','KeyD','ArrowLeft','ArrowRight'].includes(e.code))steer=0;if(mode==='play')setDrive()});
+addEventListener('blur',()=>keys.clear());addEventListener('keyup',e=>{keys.delete(e.code);if(['KeyW','KeyS','ArrowUp','ArrowDown'].includes(e.code))dir=0;if(['KeyA','KeyD','ArrowLeft','ArrowRight'].includes(e.code))steer=0;if(mode==='play')setDrive()});
 cv.oncontextmenu=e=>e.preventDefault();
 let rerr=0;engine.runRenderLoop(()=>{try{const dt=Math.min(engine.getDeltaTime()/1e3,.05);if(!game)cam.alpha+=dt*.1;else if(mode==='play'&&cur==='')stepPhys(dt);else if(mode==='build'&&cur===''){coreSync();follow();updLinks();if(armed)updGhost()}updHandles();scene.render()}catch(e){if(!rerr++)fail('Frame: '+(e&&e.stack||e))}});
 addEventListener('resize',()=>engine.resize());
@@ -341,7 +372,7 @@ async function rsaves(){try{cache=(await dbAll()).sort((a,b)=>b.mod-a.mod)}catch
 const rec=(id,title,thumb)=>({id,title,thumb,ver:VER,mod:Date.now(),parts:ser()});
 $('#sn').onclick=async()=>{const t=await ask('Name this build',`Build ${cache.length+1}`);if(!t)return;await persist('put',rec(crypto.randomUUID?crypto.randomUUID():Date.now()+'',t,await shot()));rsaves();toast('Saved')};
 $('#sl').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const s=cache.find(x=>x.id===b.closest('.sv').dataset.id),a=b.dataset.a;
- try{if(a==='load'){load(norm(structuredClone(s)).parts);open('');toast('Loaded')}
+ try{if(a==='load'){load(norm(structuredClone(s)).parts);open('');commit();toast('Loaded')}
  else if(a==='upd'){await persist('put',rec(s.id,s.title,await shot()));toast('Build updated')}
  else if(a==='ren'){const t=await ask('Rename build',s.title);if(t)await persist('put',{...s,title:t,mod:Date.now()})}
  else if(a==='del'&&confirm(`Delete "${s.title}"?`))await persist('del',s);}catch(er){toast(er.message)}if(cur==='saves')rsaves()};
@@ -358,7 +389,7 @@ document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g
 info();$('#chgb').innerHTML=CHG.map(([v,n])=>`<h3>v${v}</h3><ul>${n.map(x=>`<li>${x}</li>`).join('')}</ul>`).join('');const rend=()=>{const d=engine.description;if(d&&/WebGL|WebGPU/i.test(d))return d;return(engine.isWebGPU||engine._device||/WebGPU/i.test(engine.getClassName()))?'WebGPU1':'WebGL2'};
 const setVer=()=>{$('#ver').textContent='Version '+GV+' · '+rend();const r=$('#rinfo');if(r)r.textContent='Active renderer: '+rend()};
 $('#optb').insertAdjacentHTML('afterbegin','<small id="rinfo"></small>');setVer();
-$('#mp').onclick=()=>{if(!parts.length)load([]);game=true;document.body.classList.add('game');open('')};
+$('#mp').onclick=()=>{if(!parts.length){load([]);hist=[];redo=[]}game=true;commit();document.body.classList.add('game');open('')};
 $('#mq').onclick=()=>host.quit?host.quit():(window.close(),toast('Close this tab to quit'));
 $('#bmenu').onclick=()=>open('pause');
 $('#bs').onclick=()=>{stopPlay();open('saves')};$('#ps').onclick=()=>{stopPlay();open('saves')};

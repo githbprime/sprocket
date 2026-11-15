@@ -114,28 +114,32 @@ const PARTS={
  upr:{n:'Wheel carrier',g:'Suspension',hide:1,m:'steel',s:[.12,.56,.12],col:'#8d98a3',fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'K'}},
  car:{n:'Steering carrier',g:'Suspension',hide:1,m:'steel',s:[.12,.56,.06],col:'#8d98a3',car:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'Q',5:'K'}},
  spn:{n:'Steering spindle',g:'Suspension',hide:1,m:'steel',s:[.12,.56,.06],col:'#2f7d6d',jt:2,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'Q'}},
- dwb:{n:'Dual wishbone',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#b0bac4',macro:1,mac:[['upr',[0,0,.3]]],pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'W'}},
- dwbs:{n:'Dual wishbone (steering)',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#2f7d6d',macro:1,mac:[['car',[0,0,.27]],['spn',[0,0,.33]]],pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'W'}},
+ dwb:{n:'Dual wishbone',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#b0bac4',macro:1,mac:[['arm_hi',[0,.25,-.06]],['arm_lo',[0,-.25,-.06]],['upr',[0,0,.3]]],pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'W'}},
+ dwbs:{n:'Dual wishbone (steering)',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#2f7d6d',macro:1,mac:[['arm_hi',[0,.25,-.06]],['arm_lo',[0,-.25,-.06]],['car',[0,0,.27]],['spn',[0,0,.33]]],pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'W'}},
+ act_b:{n:'Actuator body',g:'Actuators',hide:1,m:'steel',s:[.2,.2,.4],col:'#5d6b7a',act:1,fk:{4:'N'}},
+ act_r:{n:'Actuator rod',g:'Actuators',hide:1,m:'steel',s:[.1,.1,.4],col:'#c9ced3',fk:{0:'N',1:'N',2:'N',3:'N',5:'N'}},
+ act:{n:'Linear actuator',g:'Actuators',m:'steel',s:[.2,.2,.43],col:'#5d6b7a',macro:1,mac:[['act_b',[0,0,-.015]],['act_r',[0,0,.015]]],out:4,fk:{4:'N'}},
  wish:{n:'Wishbone (old single arm)',g:'Suspension',hide:1,m:'steel',s:[.5,.08,.8],col:'#b0bac4',prism:1,wb:1,pf:5,fk:{5:'W'}},
  spring:{n:'Coil spring',g:'Suspension',m:'steel',s:[.12,.12,1],col:'#d8dde2',lk:1,spr:1},
  core:{n:'Core',g:'Core',hide:1,m:'steel',s:[.5,.5,.5],col:'#e0a030',core:1}};
 ['b_al','b_ti','b_nit','b_steel','b_tw'].forEach(k=>{const d=PARTS[k];d.vs=[k+'_h',k+'_q'];[['_h','1/2',.5],['_q','1/4',.25]].forEach(([x,l,f])=>PARTS[k+x]={...d,n:d.n+' ('+l+')',s:[d.s[0],d.s[1],d.s[2]*f],hide:1,vs:undefined})});
 PARTS.blk.vs=['blk_m'];PARTS.blk_m={...PARTS.blk,n:'Steel block (motor size)',s:[.3,.3,.3],hide:1,vs:undefined};
 const OD=[['Graphics',[['gpu','Renderer (reload to apply)',['WebGPU if available','WebGL2']],['res','Render scale',{min:.5,max:1.5,step:.25,f:v=>v*100+'%'}],['aa','Anti-aliasing',['Off','FXAA','MSAA 4x']],['bloom','Bloom','chk'],['sh','Shadows',['Off','Standard','High']],['fov','Field of view',{min:50,max:100,step:5,f:v=>v+'°'}]]],
- ['Physics',[['q','Quality',['Low (30 Hz, discrete)','Balanced (60 Hz, discrete)','High (120 Hz, continuous)']]]],
+ ['Physics',[['q','Quality',['Low (120 Hz, discrete)','Balanced (180 Hz, discrete)','High (240 Hz, discrete)','Max (240 Hz, continuous)']]]],
  ['Preferences',[['snap','Move snap (m)',{min:.05,max:1,step:.05}],['vol','Master volume',{min:0,max:1,step:.05,f:v=>Math.round(v*100)+'%'}]]]];
 const OPT=Object.assign({gpu:0,res:1,aa:1,bloom:1,sh:1,fov:60,q:1,snap:.1,vol:.8},(()=>{try{return JSON.parse(localStorage.getItem('sprocket:opts')||'{}')}catch(e){return{}}})());
-const QS=[{hz:30,cq:0},{hz:60,cq:0},{hz:120,cq:1}];
-const DEFP={pw:100,sp:12,ac:40,kf:'KeyW',kb:'KeyS',rng:35,hz:6,kl:'KeyA',kr:'KeyD',al:.5};
+const QS=[{hz:120,cq:0},{hz:180,cq:0},{hz:240,cq:0},{hz:240,cq:1}];
+const DEFP={pw:100,sp:12,ac:40,kf:'KeyW',kb:'KeyS',rng:35,hz:12,tq:100,st:.4,as:1,af:100,ke:'KeyE',kq:'KeyQ',kl:'KeyA',kr:'KeyD',al:.5};
 const PROPS={motor:[['pw','Power','%',0,100,5],['sp','Top speed',' rad/s',1,30,1],['ac','Acceleration',' rad/s²',2,200,2],['kf','Forward key'],['kb','Reverse key']],
- servo:[['rng','Swing range','°',5,60,5],['hz','Response',' Hz',1,20,1],['kl','Left key'],['kr','Right key']],
+ servo:[['rng','Swing range','°',5,60,5],['hz','Response',' Hz',1,30,1],['tq','Strength','%',10,300,10],['kl','Left key'],['kr','Right key']],
  spring:[['k','Stiffness',' Hz',1,20,.5],['z','Damping','',0,1,.05]],
- nit:[['al','Alloy','',0,1,.05]]};
+ nit:[['al','Alloy','',0,1,.05]],
+ act:[['st','Stroke',' m',.1,.4,.05],['as','Speed',' m/s',.1,3,.1],['af','Force','%',10,300,10],['hz','Response',' Hz',1,30,1],['ke','Extend key'],['kq','Retract key']]};
 const gp=(m,n)=>n==='k'||n==='z'?m.metadata[n]:((m.metadata.pr||{})[n]??DEFP[n]),setp=(m,n,v)=>{if(n==='k'||n==='z')m.metadata[n]=v;else(m.metadata.pr=m.metadata.pr||{})[n]=v};
-const propsOf=m=>{const d=PARTS[m.metadata.t];return d.jt===2?PROPS.servo:d.spr||d.wb&&!d.nk?PROPS.spring:m.metadata.t==='motor'?PROPS.motor:d.m==='nit'&&!d.lk?PROPS.nit:null};
+const propsOf=m=>{const d=PARTS[m.metadata.t];return d.act?PROPS.act:d.jt===2?PROPS.servo:d.spr||d.wb&&!d.nk?PROPS.spring:m.metadata.t==='motor'?PROPS.motor:d.m==='nit'&&!d.lk?PROPS.nit:null};
 const mprops=m=>{const d=PARTS[m.metadata.t],M=MATS[d.m];if(d.m!=='nit')return M;const a=gp(m,'al');return[M[0],5200+2700*a,.7+a]};
 const kn=c=>String(c).replace(/^Key|^Digit/,'').replace('Arrow','Arrow '),fmtp=(n,v)=>n==='al'?`${Math.round((1-v)*100)}% Al, ${Math.round(v*100)}% Co`:v+(Object.values(PROPS).flat().find(r=>r[0]===n)[2]||'');
-let capt=null,hist=[],redo=[];
+let capt=null,hist=[],redo=[],multi=new Set();
 
 /* scene */
 let cv=$('#c'),engine;
@@ -179,18 +183,19 @@ function align(){parts.forEach(w=>{if(w.metadata.t!=='wheel')return;const mo=par
  BABYLON.Quaternion.FromUnitVectorsToRef(wa,ax,q);w.rotationQuaternion=q.multiply(w.rotationQuaternion);w.position=mo.position.add(ax.scale(V.Dot(w.position.subtract(mo.position),ax)))})}
 function rEdit(){const e=$('#edit'),m=sel,pr=m&&propsOf(m),on=tool==='edit'&&mode==='build'&&!armed&&m;e.style.display=on?'flex':'none';if(!on)return;
  e.innerHTML=`<b>${PARTS[m.metadata.t].n}</b>`+(pr?pr.map(([n,l,u,a,b,st])=>u===undefined?`<div class="row"><span>${l}</span><button data-key="${n}">${capt&&capt.n===n?'Press a key…':kn(gp(m,n))}</button></div>`:`<div class="row"><span>${l}</span><span><input type="range" data-pn="${n}" min="${a}" max="${b}" step="${st}" value="${gp(m,n)}"> <b>${fmtp(n,gp(m,n))}</b></span></div>`).join(''):'<small>No editable settings for this part.</small>')}
-$('#edit').oninput=e=>{const n=e.target.dataset.pn;if(!n||!sel)return;setp(sel,n,+e.target.value);e.target.nextElementSibling.textContent=fmtp(n,+e.target.value)};
+$('#edit').oninput=e=>{const n=e.target.dataset.pn;if(!n||!sel)return;const v=+e.target.value;(multi.size>1?[...multi]:[sel]).forEach(m=>{if(propsOf(m)===propsOf(sel))setp(m,n,v)});e.target.nextElementSibling.textContent=fmtp(n,v)};
 $('#edit').onchange=()=>commit();$('#edit').onclick=e=>{const b=e.target.closest('[data-key]');if(b){capt={m:sel,n:b.dataset.key};rEdit()}};
-function info(){rEdit();const m=sel,e=$('#inf'),pr=!armed&&m&&m.metadata.k!==undefined;$('#pr').style.display=pr?'inline-flex':'none';if(pr){$('#pk').value=m.metadata.k;$('#pz').value=m.metadata.z}if(armed){e.textContent=`Placing ${PARTS[armed].n}. ${PARTS[armed].lk?'Click a part for one end, then another part for the other end':'Click to place, R / T / G turns it'}. Esc cancels.`;return}if(!m){e.textContent='Build onto the core. Its arrow points forward (W / S drives, A / D steers). Click a part to select it, right-drag to orbit.';return}const d=PARTS[m.metadata.t],z=m.scaling;
+function info(){rEdit();const m=sel,e=$('#inf'),pr=!armed&&m&&m.metadata.k!==undefined;$('#pr').style.display=pr?'inline-flex':'none';if(pr){$('#pk').value=m.metadata.k;$('#pz').value=m.metadata.z}if(armed){e.textContent=`Placing ${PARTS[armed].n}. ${PARTS[armed].lk?'Click a part for one end, then another part for the other end':'Click to place, R / T / G turns it'}. Esc cancels.`;return}if(multi.size>1){e.textContent=`${multi.size} parts selected. Drag to move them together, Delete removes them, Shift-click toggles parts.`;return}if(!m){e.textContent='Build onto the core. Its arrow points forward (W / S drives, A / D steers). Click a part to select it, right-drag to orbit. Shift-click selects several.';return}const d=PARTS[m.metadata.t],z=m.scaling;
  e.textContent=`${d.n}, ${massOf(m).toFixed(0)} kg, ${z.x.toFixed(2)} x ${z.y.toFixed(2)} x ${z.z.toFixed(2)} m`+(d.sway?'. The curved arrows show the swing. Attach the swinging part to its front face':d.shaft?'. Wheels go on the arrow side':d.cyl?'. The stripe shows spin':d.wb?'. The flat edge hinges onto the build and springs; mount wheels at the tip':d.core?'. The arrow shows forward. Drag the core to move the whole build':d.lk?(d.spr?'. Adjust stiffness and damping below':'. Adds a rigid link between its two ends'):'')+(tool==='scale'&&d.sc?'. Drag a dot to stretch that side; hold Alt to stretch both sides':'')}
 function rot90(a){const q=BABYLON.Quaternion.RotationAxis(a==='x'?V.Right():a==='y'?V.Up():V.Forward(),Math.PI/2);if(armed){gq=q.multiply(gq);userRot=true;return}if(!sel||mode!=='build'||fixed(sel))return;sel.rotationQuaternion=q.multiply(sel.rotationQuaternion);fix();commit()}
 document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>rot90(b.dataset.r));addEventListener('pointerup',()=>setTimeout(()=>{fix();commit();info()},0));
 const ser=()=>parts.map(m=>{const l=m.metadata.link,o={t:m.metadata.t,p:m.position.asArray().map(rn),r:m.rotationQuaternion.asArray().map(rn),s:m.scaling.asArray().map(rn),k:m.metadata.k,z:m.metadata.z,g:m.metadata.g,pr:m.metadata.pr};if(l){o.a=parts.indexOf(l.a);o.b=parts.indexOf(l.b);o.la=l.la.asArray().map(rn);o.lb=l.lb.asArray().map(rn)}return o});
 const fixed=m=>m&&m.metadata.link,isCore=m=>m&&PARTS[m.metadata.t].core;let cs=null,shiftDown=false,userRot=false;
 addEventListener('keydown',e=>shiftDown=e.shiftKey);addEventListener('keyup',e=>shiftDown=e.shiftKey);
-function coreSync(){const c=parts.find(isCore);if(!c)return;const p1=c.position,q1=c.rotationQuaternion;
- if(cs&&(!p1.equals(cs.p)||!q1.equals(cs.q))){const dq=q1.multiply(BABYLON.Quaternion.Inverse(cs.q));parts.forEach(m=>{if(m===c||m.metadata.link)return;m.position.copyFrom(p1.add(m.position.subtract(cs.p).rotateByQuaternionToRef(dq,new V())));m.rotationQuaternion=dq.multiply(m.rotationQuaternion);m._ok=null})}
- cs={p:p1.clone(),q:q1.clone()}}
+function hl(){parts.forEach(p=>{try{p.edgesColor=EC;p.edgesWidth=2.5}catch(e){}});multi.forEach(p=>{try{p.edgesColor=SC;p.edgesWidth=p===sel?7:4}catch(e){}})}
+function coreSync(){const grp=multi.size>1&&sel&&mode==='build',L=grp?sel:parts.find(isCore);if(!L)return;const p1=L.position,q1=L.rotationQuaternion;
+ if(cs&&cs.m===L&&(!p1.equals(cs.p)||!q1.equals(cs.q))){const dq=q1.multiply(BABYLON.Quaternion.Inverse(cs.q));(grp?[...multi]:parts).forEach(m=>{if(m===L||m.metadata.link)return;m.position.copyFrom(p1.add(m.position.subtract(cs.p).rotateByQuaternionToRef(dq,new V())));m.rotationQuaternion=dq.multiply(m.rotationQuaternion);if(!grp)m._ok=null})}
+ cs={m:L,p:p1.clone(),q:q1.clone()}}
 function lift(){coreSync();let lo=0;parts.forEach(p=>{if(!p.metadata.link)lo=Math.min(lo,p.position.y-ext(obb(p),V.Up()))});if(lo<-1e-3){parts.find(isCore).position.y-=lo;coreSync()}}
 function lay(m,p1,p2){const d=p2.subtract(p1),L=d.length();if(L<1e-4)return;m.position.copyFrom(p1.add(p2).scale(.5));m.scaling.z=L;const q=new BABYLON.Quaternion();BABYLON.Quaternion.FromUnitVectorsToRef(V.Forward(),d.scale(1/L),q);m.rotationQuaternion=q}
 const loc=(m,w)=>{m.computeWorldMatrix(true);return V.TransformCoordinates(w,m.getWorldMatrix().clone().invert())};
@@ -199,19 +204,20 @@ function mkLink(t,a,b,la,lb,x){const m=mk(t,[0,0,0],null,null,x),caps=[0,1].map(
 function load(a){cs=null;gz.attachToMesh(null);parts.forEach(m=>m.dispose());parts.length=0;const mp=[];a.forEach((o,i)=>{if(!PARTS[o.t].lk)mp[i]=mk(o.t,o.p,o.r,o.s,o)});a.forEach(o=>{if(PARTS[o.t].lk&&mp[o.a]&&mp[o.b])mkLink(o.t,mp[o.a],mp[o.b],new V(...o.la),new V(...o.lb),o)});if(!parts.some(p=>p.metadata.t==='core'))mk('core',[0,.5,0])}
 
 /* gizmos */
-const gz=new BABYLON.GizmoManager(scene);gz.attachableMeshes=parts;gz.clearGizmoOnEmptyPointerEvent=true;
+const gz=new BABYLON.GizmoManager(scene);gz.attachableMeshes=parts;gz.clearGizmoOnEmptyPointerEvent=true;gz.usePointerToAttachGizmos=false;
 function applyTool(){gz.positionGizmoEnabled=tool==='move';gz.rotationGizmoEnabled=tool==='rot';gz.scaleGizmoEnabled=false;if(fixed(sel)){gz.positionGizmoEnabled=gz.rotationGizmoEnabled=false}
  const g=gz.gizmos;if(g.positionGizmo){g.positionGizmo.snapDistance=OPT.snap;g.positionGizmo.updateGizmoRotationToMatchAttachedMesh=false}
  if(g.rotationGizmo)g.rotationGizmo.snapDistance=Math.PI/12;if(g.scaleGizmo)g.scaleGizmo.snapDistance=.1;
  document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===tool));try{info()}catch(e){}}
-gz.onAttachedToMeshObservable.add(m=>{parts.forEach(p=>{try{p.edgesColor=EC;p.edgesWidth=2.5}catch(e){}});if(m)try{m.edgesColor=SC;m.edgesWidth=7}catch(e){}sel=m;if(m&&!m._ok)m._ok=[m.position.clone(),m.rotationQuaternion.clone(),m.scaling.clone()];info();if(m&&tool==='scale'&&!PARTS[m.metadata.t].sc)toast('This part cannot be scaled');applyTool()});safe('Gizmos',applyTool);
+gz.onAttachedToMeshObservable.add(m=>{if(m&&!multi.has(m))multi=new Set([m]);if(!m)multi=new Set();sel=m;multi.forEach(p=>{if(!p._ok)p._ok=[p.position.clone(),p.rotationQuaternion.clone(),p.scaling.clone()]});hl();info();if(m&&tool==='scale'&&!PARTS[m.metadata.t].sc)toast('This part cannot be scaled');applyTool()});safe('Gizmos',applyTool);
 document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tool=b.dataset.t;applyTool()});
-function del(){if(!sel)return;const m=sel;if(PARTS[m.metadata.t].core){toast('The core cannot be deleted');return}gz.attachToMesh(null);[m,...parts.filter(p=>p!==m&&(p.metadata.link&&(p.metadata.link.a===m||p.metadata.link.b===m)||m.metadata.g&&p.metadata.g===m.metadata.g))].forEach(x=>{parts.splice(parts.indexOf(x),1);x.dispose()});commit()}
+function del(){if(!sel)return;const S=(multi.size>1?[...multi]:[sel]).filter(m=>!isCore(m));if(!S.length){toast('The core cannot be deleted');return}gz.attachToMesh(null);const all=new Set();
+ S.forEach(m=>{all.add(m);parts.forEach(p=>{if(p!==m&&(p.metadata.link&&(p.metadata.link.a===m||p.metadata.link.b===m)||m.metadata.g&&p.metadata.g===m.metadata.g))all.add(p)})});all.forEach(x=>{parts.splice(parts.indexOf(x),1);x.dispose()});commit()}
 function commit(){if(mode!=='build'||!game)return;const j=JSON.stringify(ser());if(hist[hist.length-1]===j)return;hist.push(j);if(hist.length>100)hist.shift();redo.length=0}
 const resync=()=>{if(hist.length)hist[hist.length-1]=JSON.stringify(ser())};
 function undo(){if(mode!=='build'||hist.length<2)return;disarm();redo.push(hist.pop());load(JSON.parse(hist[hist.length-1]));resync()}
 function redoF(){if(mode!=='build'||!redo.length)return;disarm();const j=redo.pop();hist.push(j);load(JSON.parse(j));resync()}
-function dup(){if(!sel)return;if(fixed(sel)||isCore(sel)){toast('This part cannot be duplicated');return}const m=sel,n=mk(m.metadata.t,m.position.asArray(),m.rotationQuaternion.asArray(),m.scaling.asArray(),m.metadata);for(let k=0;k<80&&!check(n);k++)n.position.x+=.5;gz.attachToMesh(n);commit()}
+function dup(){if(!sel)return;if(multi.size>1){toast('Select a single part to duplicate');return}if(fixed(sel)||isCore(sel)){toast('This part cannot be duplicated');return}const m=sel,n=mk(m.metadata.t,m.position.asArray(),m.rotationQuaternion.asArray(),m.scaling.asArray(),m.metadata);for(let k=0;k<80&&!check(n);k++)n.position.x+=.5;gz.attachToMesh(n);commit()}
 $('#bu').onclick=undo;$('#br').onclick=redoF;$('#bx').onclick=del;$('#bd').onclick=dup;$('#bn').onclick=()=>{if(mode==='build'&&confirm('Start a new build? Unsaved changes are lost.')){disarm();load([]);commit()}};
 const EPS=.02,ok=(a,b)=>a==='K'&&b==='K'||a==='Q'&&b==='Q'||a==='V'&&b==='V'||a==='W'&&b==='S'||a==='S'&&b==='W'||a==='S'&&b==='S'||a==='M'&&b==='H'||a==='H'&&b==='M'||a==='J'&&b==='S'||a==='S'&&b==='J',fk=(m,f)=>(PARTS[m.metadata.t].fk||{})[f]||'S';
 // Face kinds: S structural, M motor shaft, H wheel hub, J joint pivot, N nothing. ok() is the allowed-pair table.
@@ -226,9 +232,10 @@ function rel(a,b){const t=b.c.subtract(a.c),X=[...a.A,...b.A],out=[];let touch=f
  return touch?out:'overlap'}
 let touchN=0;
 function check(m){bad='';touchN=0;const A=obb(m);if(m.position.y-ext(A,V.Up())<-EPS){bad='Parts cannot go below the floor';return false}
- for(const o of parts){if(o===m||o.metadata.link)continue;const r=rel(A,obb(o));if(r==='sep')continue;if(r==='overlap'){bad='Parts cannot overlap';return false}
+ for(const o of parts){if(o===m||o.metadata.link||m.metadata.g&&o.metadata.g===m.metadata.g)continue;const r=rel(A,obb(o));if(r==='sep')continue;if(r==='overlap'){bad='Parts cannot overlap';return false}
   for(const c of r){if(!ok(fk(m,c.fa),fk(o,c.fb))){bad='Those faces cannot be joined';return false}touchN++}}return true}
-function fix(){const m=sel;if(!m||fixed(m)||mode!=='build'||armed)return;if(isCore(m)){lift();return}if(!m._ok)return;if(check(m))m._ok=[m.position.clone(),m.rotationQuaternion.clone(),m.scaling.clone()];else{m.position.copyFrom(m._ok[0]);m.rotationQuaternion.copyFrom(m._ok[1]);m.scaling.copyFrom(m._ok[2]);toast(bad)}}
+function fix(){const m=sel;if(!m||fixed(m)||mode!=='build'||armed)return;if(isCore(m)){lift();return}const G=multi.size>1?[...multi]:[m];if(G.some(p=>!p._ok))return;
+ if(!G.find(p=>!check(p)))G.forEach(p=>p._ok=[p.position.clone(),p.rotationQuaternion.clone(),p.scaling.clone()]);else{G.forEach(p=>{p.position.copyFrom(p._ok[0]);p.rotationQuaternion.copyFrom(p._ok[1]);p.scaling.copyFrom(p._ok[2])});toast(bad)}}
 function follow(){if(!parts.length)return;const c=new V();parts.forEach(m=>c.addInPlace(m.position));cam.setTarget(V.Lerp(cam.target,c.scale(1/parts.length),.08),false,false,true)}
 const gvm=['#3ddc84','#ff5252'].map(c=>{const m=new BABYLON.StandardMaterial('gv',scene);m.diffuseColor=BABYLON.Color3.FromHexString(c);m.emissiveColor=BABYLON.Color3.FromHexString(c).scale(.5);m.alpha=.5;return m});
 const mark=BABYLON.MeshBuilder.CreateSphere('mk',{diameter:.2},scene);mark.material=am();mark.isPickable=false;mark.setEnabled(false);
@@ -236,9 +243,9 @@ function lkGhost(){const pk=scene.pick(scene.pointerX,scene.pointerY,m=>parts.in
  if(!pk.hit){ghost.setEnabled(false);mark.setEnabled(false);return}
  const n=pk.getNormal(true)||V.Up(),B=obb(pk.pickedMesh),sp=shiftOff(faceCtr(B,faceOf(B,n)),pk,n);hov={m:pk.pickedMesh,w:sp};mark.setEnabled(true);mark.position.copyFrom(sp);
  if(!lk){ghost.setEnabled(false);return}ghost.setEnabled(true);lay(ghost,lk.w,sp);ghost.material=gvm[hov.m!==lk.m&&V.Distance(lk.w,sp)>=.3?0:1]}
-function spawnMac(t,g){const id='g'+Date.now(),Q=g.rotationQuaternion;[['arm_hi',[0,.25,-.06]],['arm_lo',[0,-.25,-.06]],...PARTS[t].mac].forEach(([k,o])=>mk(k,g.position.add(new V(...o).rotateByQuaternionToRef(Q,new V())).asArray(),Q.asArray(),null,{g:id}))}
-function arm(t){disarm();armed=t;userRot=false;gq=new BABYLON.Quaternion(...(PARTS[t].rot||[0,0,0,1]));ghost=mk(t,[0,-50,0]);parts.splice(parts.indexOf(ghost),1);ghost.isPickable=false;gz.attachToMesh(null);gz.usePointerToAttachGizmos=false;rpal();info()}
-function disarm(){if(ghost)ghost.dispose();ghost=armed=lk=hov=null;mark.setEnabled(false);gz.usePointerToAttachGizmos=mode==='build';rpal();info()}
+function spawnMac(t,g){const id='g'+Date.now(),Q=g.rotationQuaternion;PARTS[t].mac.forEach(([k,o])=>mk(k,g.position.add(new V(...o).rotateByQuaternionToRef(Q,new V())).asArray(),Q.asArray(),null,{g:id}))}
+function arm(t){disarm();armed=t;userRot=false;gq=new BABYLON.Quaternion(...(PARTS[t].rot||[0,0,0,1]));ghost=mk(t,[0,-50,0]);parts.splice(parts.indexOf(ghost),1);ghost.isPickable=false;gz.attachToMesh(null);rpal();info()}
+function disarm(){if(ghost)ghost.dispose();ghost=armed=lk=hov=null;mark.setEnabled(false);rpal();info()}
 const lf=f=>[V.Right(),V.Up(),V.Forward()][f>>1].scale(f&1?-1:1);
 function orient(d,n,kf,at){let bq=null,bs=-9;const cd=cam.position.subtract(at).normalize();cd.y*=.5;
  for(let g=0;g<6;g++){if(g===d.out&&kf==='S'||d.pf!==undefined&&g!==d.pf||!ok(fk(ghost,g),kf))continue;const r=new BABYLON.Quaternion();BABYLON.Quaternion.FromUnitVectorsToRef(lf(g).rotateByQuaternionToRef(gq,new V()),n.scale(-1),r);const q0=r.multiply(gq);
@@ -247,7 +254,7 @@ function orient(d,n,kf,at){let bq=null,bs=-9;const cd=cam.position.subtract(at).
 // Scale handles: a dot on each face; dragging it stretches that side only (Alt = both sides)
 const hdl=[0,1,2,3,4,5].map(f=>{const h=BABYLON.MeshBuilder.CreateSphere('hd',{diameter:1,segments:8},scene);h.material=am();h.isPickable=false;h.renderingGroupId=1;h.setEnabled(false);h.metadata={f};return h});
 let drag=null;
-function updHandles(){const m=sel,on=mode==='build'&&!armed&&tool==='scale'&&m&&PARTS[m.metadata.t].sc&&cur==='';hdl.forEach(h=>{if(!on){h.setEnabled(false);return}h.setEnabled(true);h.position.copyFrom(faceCtr(obb(m),h.metadata.f));h.scaling.setAll(Math.max(.07,V.Distance(cam.position,h.position)*.03))})}
+function updHandles(){const m=sel,on=mode==='build'&&!armed&&tool==='scale'&&multi.size<2&&m&&PARTS[m.metadata.t].sc&&cur==='';hdl.forEach(h=>{if(!on){h.setEnabled(false);return}h.setEnabled(true);h.position.copyFrom(faceCtr(obb(m),h.metadata.f));h.scaling.setAll(Math.max(.07,V.Distance(cam.position,h.position)*.03))})}
 scene.onPointerObservable.add(pi=>{const E=pi.event,T=BABYLON.PointerEventTypes;
  if(pi.type===T.POINTERDOWN&&E.button===0&&!armed&&tool==='scale'&&sel&&PARTS[sel.metadata.t].sc){const pk=scene.pick(scene.pointerX,scene.pointerY,m=>hdl.includes(m)&&m.isEnabled());
   if(pk.hit){const f=pk.pickedMesh.metadata.f,B=obb(sel),i=f>>1;drag={i,sg:f&1?-1:1,A:B.A[i].clone(),c:sel.position.clone(),L:sel.scaling.asArray()[i],P:faceCtr(B,f)}}}
@@ -256,6 +263,11 @@ scene.onPointerObservable.add(pi=>{const E=pi.event,T=BABYLON.PointerEventTypes;
   const sc=sel.scaling.asArray();sc[drag.i]=L;sel.scaling.set(...sc);
   sel.position.copyFrom(al?drag.c:drag.P.subtract(drag.A.scale(drag.sg*drag.L)).add(drag.A.scale(drag.sg*L/2)))}
  else if(pi.type===T.POINTERUP)drag=null});
+const selectOnly=m=>{multi=m?new Set([m]):new Set();gz.attachToMesh(m);hl();info()};
+scene.onPointerObservable.add(pi=>{if(pi.type!==BABYLON.PointerEventTypes.POINTERDOWN||pi.event.button!==0||drag||armed||mode!=='build'||cur!=='')return;
+ const pk=scene.pick(scene.pointerX,scene.pointerY,x=>parts.includes(x)),m=pk.hit?pk.pickedMesh:null;
+ if(!m){if(!shiftDown)selectOnly(null);return}
+ if(shiftDown&&sel){if(multi.has(m)){if(multi.size>1){multi.delete(m);if(sel===m)gz.attachToMesh([...multi].pop());hl();info()}}else{multi.add(m);gz.attachToMesh(m);hl();info()}}else selectOnly(m)});
 const faceCtr=(B,f)=>B.c.add(B.A[f>>1].scale((f&1?-1:1)*B.h[f>>1]));
 function faceOf(B,n){let f=0,b=-1;for(let i=0;i<3;i++){const d=V.Dot(B.A[i],n);if(Math.abs(d)>b){b=Math.abs(d);f=2*i+(d>0?0:1)}}return f}
 function shiftOff(sp,pk,n){if(!shiftDown)return sp;const o=pk.pickedPoint.subtract(sp);o.subtractInPlace(n.scale(V.Dot(o,n)));['x','y','z'].forEach(a=>o[a]=Math.round(o[a]/OPT.snap)*OPT.snap);return sp.add(o)}
@@ -283,7 +295,7 @@ $('#pl').onmouseout=later;fly.onmouseover=keepFly;fly.onmouseout=later;fly.oncli
 rpal();
 
 /* physics */
-let J,jolt,phys,bi,bodies=[],cons=[],motors=[],servos=[],links=[],steer=0,gf,acc=0,dir=0;const keys=new Set();
+let J,jolt,phys,bi,bodies=[],cons=[],motors=[],servos=[],links=[],acts=[],steer=0,gf,acc=0,dir=0;const keys=new Set();
 if(window.JoltInit)window.JoltInit().then(x=>J=x).catch(e=>toast('Physics failed to start: '+e.message));
 function mkBody(m,i){if(PARTS[m.metadata.t].lk)return null;const t=m.metadata.t,d=PARTS[t],s=m.scaling,q=m.rotationQuaternion,p=m.position,Q=QS[OPT.q];
  const sh=d.cyl?new J.CylinderShape(s.y/2,s.x/2,.02,null):new J.BoxShape(new J.Vec3(s.x/2,s.y/2,s.z/2),Math.min(.02,s.x/2,s.y/2,s.z/2),null);
@@ -301,7 +313,7 @@ const ax=(m,v)=>v.rotateByQuaternionToRef(m.rotationQuaternion,new V());
 function hinge(iw,io){const w=parts[iw],a=ax(w,V.Up()),h=mkh(w.position,a,ax(w,V.Right()),io,iw);
  if(parts[io].metadata.t==='motor'){h.SetMotorState(J.EMotorState_Velocity);const v=V.Cross(a,V.Up()),fw=ax(parts.find(isCore)||w,V.Forward());{const mo=parts[io],T=1500*gp(mo,'pw')/100;try{const ms=h.GetMotorSettings();ms.mMaxTorqueLimit=T;ms.mMinTorqueLimit=-T}catch(e){}motors.push({h,sg:Math.sign(V.Dot(v,fw))||1,v:0,sp:gp(mo,'sp'),ac:gp(mo,'ac'),kf:gp(mo,'kf'),kb:gp(mo,'kb')})}}}
 function joint(ih,io){const h=parts[ih],O=obb(h),a=ax(h,V.Up()),c=mkh(O.c.add(O.A[2].scale(O.h[2])),a,ax(h,V.Right()),ih,io);
- if(PARTS[h.metadata.t].jt===2){const R=gp(h,'rng')*Math.PI/180;c.SetLimits(-R-.05,R+.05);c.SetMotorState(J.EMotorState_Position);try{const m=c.GetMotorSettings();m.mSpringSettings.mFrequency=gp(h,'hz');m.mSpringSettings.mDamping=1}catch(e){}servos.push({h:c,sg:Math.sign(a.y)||1,rng:R,kl:gp(h,'kl'),kr:gp(h,'kr')})}}
+ if(PARTS[h.metadata.t].jt===2){const R=gp(h,'rng')*Math.PI/180;c.SetLimits(-R-.05,R+.05);c.SetMotorState(J.EMotorState_Position);try{const m=c.GetMotorSettings();m.mSpringSettings.mFrequency=gp(h,'hz');m.mSpringSettings.mDamping=1;const T=6000*gp(h,'tq')/100;m.mMaxTorqueLimit=T;m.mMinTorqueLimit=-T}catch(e){}servos.push({h:c,sg:Math.sign(a.y)||1,rng:R,kl:gp(h,'kl'),kr:gp(h,'kr')})}}
 function spring(m,ia,ib){const l=m.metadata.link,a=parts[ia],b=parts[ib];[a,b].forEach(x=>x.computeWorldMatrix(true));const p1=V.TransformCoordinates(l.la,a.getWorldMatrix()),p2=V.TransformCoordinates(l.lb,b.getWorldMatrix()),d=new J.DistanceConstraintSettings();
  d.mSpace=J.EConstraintSpace_WorldSpace;d.mPoint1=new J.RVec3(p1.x,p1.y,p1.z);d.mPoint2=new J.RVec3(p2.x,p2.y,p2.z);d.mMinDistance=d.mMaxDistance=V.Distance(p1,p2);
  try{d.mLimitsSpringSettings.mFrequency=m.metadata.k;d.mLimitsSpringSettings.mDamping=m.metadata.z}catch(x){d.mFrequency=m.metadata.k;d.mDamping=m.metadata.z}
@@ -315,39 +327,45 @@ function pose(con){const T=.26,gr={};parts.forEach((m,i)=>{const g=m.metadata.g;
   ar.forEach(i=>{const p=parts[i],O=obb(p),pv=O.c.subtract(O.A[2].scale(O.h[2]));p.position.copyFrom(pv.add(p.position.subtract(pv).rotateByQuaternionToRef(Rq,new V())));p.rotationQuaternion=Rq.multiply(p.rotationQuaternion)});
   sub.forEach(i=>parts[i].position.addInPlace(dl))})}
 function qtie(i,j){const ic=PARTS[parts[i].metadata.t].car?i:j,is=ic===i?j:i,c=parts[ic],sp2=parts[is],O=obb(c),a=ax(c,V.Up()),h=mkh(O.c.add(O.A[2].scale(O.h[2])),a,ax(c,V.Right()),ic,is),R=gp(sp2,'rng')*Math.PI/180;
- h.SetLimits(-R-.05,R+.05);h.SetMotorState(J.EMotorState_Position);try{const m=h.GetMotorSettings();m.mSpringSettings.mFrequency=gp(sp2,'hz');m.mSpringSettings.mDamping=1}catch(e){}servos.push({h,sg:Math.sign(a.y)||1,rng:R,kl:gp(sp2,'kl'),kr:gp(sp2,'kr')})}
+ h.SetLimits(-R-.05,R+.05);h.SetMotorState(J.EMotorState_Position);try{const m=h.GetMotorSettings();m.mSpringSettings.mFrequency=gp(sp2,'hz');m.mSpringSettings.mDamping=1;const T=6000*gp(sp2,'tq')/100;m.mMaxTorqueLimit=T;m.mMinTorqueLimit=-T}catch(e){}servos.push({h,sg:Math.sign(a.y)||1,rng:R,kl:gp(sp2,'kl'),kr:gp(sp2,'kr')})}
+function slider(ib,ir){const b=parts[ib],a=obb(b).A[2],ax2=new J.Vec3(a.x,a.y,a.z),s=new J.SliderConstraintSettings(),st=gp(b,'st');s.mSpace=J.EConstraintSpace_WorldSpace;s.mAutoDetectPoint=true;
+ if(s.SetSliderAxis)s.SetSliderAxis(ax2);else{s.mSliderAxis1=ax2;s.mSliderAxis2=ax2}s.mLimitsMin=-.005;s.mLimitsMax=st+.005;
+ const c=J.castObject(cc(s,bodies[ib],bodies[ir]),J.SliderConstraint);phys.AddConstraint(c);gf.DisableCollision(ib,ir);c.SetMotorState(J.EMotorState_Position);c.SetTargetPosition(0);
+ try{const m=c.GetMotorSettings(),F=20000*gp(b,'af')/100;m.mMaxForceLimit=F;m.mMinForceLimit=-F;m.mSpringSettings.mFrequency=gp(b,'hz');m.mSpringSettings.mDamping=1}catch(e){}
+ acts.push({c,pos:0,st,sp:gp(b,'as'),ke:gp(b,'ke'),kq:gp(b,'kq')})}
 function wbone(iw,io){const w=parts[iw],O=obb(w),h=mkh(O.c.add(O.A[2].scale(-O.h[2])),ax(w,V.Right()),ax(w,V.Up()),io,iw);droop(w)>0?h.SetLimits(-.6,.3):h.SetLimits(-.3,.6);
  if(w.metadata.k!==undefined){h.SetMotorState(J.EMotorState_Position);h.SetTargetAngle(0);try{const m=h.GetMotorSettings();m.mSpringSettings.mFrequency=w.metadata.k;m.mSpringSettings.mDamping=w.metadata.z}catch(e){}}}
 function ktie(i,j){const ia=PARTS[parts[i].metadata.t].arm?i:j,iu=ia===i?j:i,a=parts[ia],O=obb(a);mkh(O.c.add(O.A[2].scale(O.h[2])),ax(a,V.Right()),ax(a,V.Up()),iu,ia)}
 function startPlay0(){if(!J)return toast('Physics is still loading');
- disarm();snap=ser();gz.attachToMesh(null);gz.usePointerToAttachGizmos=false;
+ disarm();snap=ser();gz.attachToMesh(null);
  const st=new J.JoltSettings(),of=new J.ObjectLayerPairFilterTable(2);of.EnableCollision(0,1);of.EnableCollision(1,1);
  const bp=new J.BroadPhaseLayerInterfaceTable(2,2);bp.MapObjectToBroadPhaseLayer(0,new J.BroadPhaseLayer(0));bp.MapObjectToBroadPhaseLayer(1,new J.BroadPhaseLayer(1));
  st.mObjectLayerPairFilter=of;st.mBroadPhaseLayerInterface=bp;st.mObjectVsBroadPhaseLayerFilter=new J.ObjectVsBroadPhaseLayerFilterTable(bp,2,of,2);
- jolt=new J.JoltInterface(st);J.destroy(st);phys=jolt.GetPhysicsSystem();bi=phys.GetBodyInterface();try{const ps=phys.GetPhysicsSettings();[ps.mNumVelocitySteps,ps.mNumPositionSteps]=[[8,2],[12,3],[20,4]][OPT.q];phys.SetPhysicsSettings(ps)}catch(e){}
+ jolt=new J.JoltInterface(st);J.destroy(st);phys=jolt.GetPhysicsSystem();bi=phys.GetBodyInterface();try{const ps=phys.GetPhysicsSettings();[ps.mNumVelocitySteps,ps.mNumPositionSteps]=[[10,2],[14,3],[18,4],[20,4]][OPT.q];phys.SetPhysicsSettings(ps)}catch(e){}
  const gs=new J.BodyCreationSettings(new J.BoxShape(new J.Vec3(200,.5,200),.05,null),new J.RVec3(0,-.5,0),new J.Quat(0,0,0,1),J.EMotionType_Static,0);
  bi.AddBody(bi.CreateBody(gs).GetID(),J.EActivation_DontActivate);J.destroy(gs);
- const n=parts.length;gf=new J.GroupFilterTable(n);const con=contacts();pose(con);bodies=parts.map(mkBody);cons=[];motors=[];servos=[];links=[];steer=0;parts.forEach(m=>m.computeWorldMatrix(true));
+ const n=parts.length;gf=new J.GroupFilterTable(n);const con=contacts();pose(con);bodies=parts.map(mkBody);cons=[];motors=[];servos=[];links=[];acts=[];steer=0;parts.forEach(m=>m.computeWorldMatrix(true));
  const adj=[],ed=(i,j)=>{(adj[i]=adj[i]||[]).push(j);(adj[j]=adj[j]||[]).push(i)};
  for(const{i,j,ka,kb}of con){ed(i,j);
   if(ka==='S'&&kb==='S'||ka==='V'&&kb==='V')weld(i,j);
   else if(ka+kb==='MH'||ka+kb==='HM')ka==='H'?hinge(i,j):hinge(j,i);
   else if(ka==='K')ktie(i,j);else if(ka==='Q')qtie(i,j);else if(ka==='W')wbone(i,j);else if(kb==='W')wbone(j,i);else if(ka==='J')joint(i,j);else joint(j,i)}
  parts.forEach((m,i)=>{const l=m.metadata.link;if(!l)return;const a=parts.indexOf(l.a),b=parts.indexOf(l.b);if(a<0||b<0||!bodies[a]||!bodies[b])return;ed(a,b);PARTS[m.metadata.t].spr?spring(m,a,b):weld(a,b,i)});
+ {const ag={};parts.forEach((m,i)=>{const g=m.metadata.g,t=m.metadata.t;if(g&&(t==='act_b'||t==='act_r'))(ag[g]=ag[g]||{})[t]=i});Object.values(ag).forEach(x=>{if(x.act_b!==undefined&&x.act_r!==undefined){slider(x.act_b,x.act_r);ed(x.act_b,x.act_r)}})}
  const core=parts.findIndex(p=>p.metadata.t==='core'),seen=new Set([core]),stk=[core];while(stk.length){const i=stk.pop();(adj[i]||[]).forEach(j=>{if(!seen.has(j)){seen.add(j);stk.push(j)}})}
  const loose=parts.filter((p,i)=>!p.metadata.link&&!seen.has(i)).length;if(loose)toast(`${loose} part${loose>1?'s are':' is'} not attached to the core`);
  mode='play';acc=0;dir=0;document.body.classList.add('play');$('#bm').textContent='Stop';setDrive()}
-function startPlay(){try{startPlay0()}catch(e){fail('Play: '+(e&&e.stack||e));try{if(jolt)J.destroy(jolt)}catch(x){}jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';gz.usePointerToAttachGizmos=true;if(snap)load(snap)}}
-function stopPlay(){if(mode!=='play')return;J.destroy(jolt);jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';gz.usePointerToAttachGizmos=true;load(snap);resync()}
+function startPlay(){try{startPlay0()}catch(e){fail('Play: '+(e&&e.stack||e));try{if(jolt)J.destroy(jolt)}catch(x){}jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';if(snap)load(snap)}}
+function stopPlay(){if(mode!=='play')return;J.destroy(jolt);jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';load(snap);resync()}
 const setDrive=()=>{};
-function drive(h){const dn=c=>keys.has(c)?1:0;motors.forEach(m=>{const t=(dn(m.kf)-dn(m.kb))*m.sp*m.sg;m.v+=Math.max(-m.ac*h,Math.min(m.ac*h,t-m.v));m.h.SetTargetAngularVelocity(m.v)});servos.forEach(s=>s.h.SetTargetAngle((dn(s.kr)-dn(s.kl))*s.rng*s.sg))}
+function drive(h){const dn=c=>keys.has(c)?1:0;motors.forEach(m=>{const t=(dn(m.kf)-dn(m.kb))*m.sp*m.sg;m.v+=Math.max(-m.ac*h,Math.min(m.ac*h,t-m.v));m.h.SetTargetAngularVelocity(m.v)});servos.forEach(s=>s.h.SetTargetAngle((dn(s.kr)-dn(s.kl))*s.rng*s.sg));acts.forEach(a=>{a.pos=Math.max(0,Math.min(a.st,a.pos+(dn(a.ke)-dn(a.kq))*a.sp*h));a.c.SetTargetPosition(a.pos)})}
 function tick(h){for(let k=cons.length;k--;){try{const l=cons[k].c.GetTotalLambdaPosition();if(Math.hypot(l.GetX(),l.GetY(),l.GetZ())/h>cons[k].max){phys.RemoveConstraint(cons[k].c);cons.splice(k,1)}}catch(e){}}drive(h);jolt.Step(h,1)}
-function stepPhys(dt){acc+=dt*ts;const h=1/QS[OPT.q].hz;let n=0;while(acc>=h&&n++<10){tick(h);acc-=h}if(n>10)acc=0;
+function stepPhys(dt){acc+=dt*ts;const h=1/QS[OPT.q].hz;let n=0;while(acc>=h&&n++<12){tick(h);acc-=h}if(n>12)acc=0;
  const c=new V();bodies.forEach((b,i)=>{if(!b)return;const p=b.GetPosition(),r=b.GetRotation(),m=parts[i];m.position.set(p.GetX(),p.GetY(),p.GetZ());m.rotationQuaternion.set(r.GetX(),r.GetY(),r.GetZ(),r.GetW());c.addInPlace(m.position)});
  const nb=bodies.filter(Boolean).length;if(nb)cam.setTarget(V.Lerp(cam.target,c.scale(1/nb),.08),false,false,true);updLinks()}
 $('#bm').onclick=()=>mode==='play'?stopPlay():startPlay();
 $('#ts').oninput=e=>{ts=e.target.value/100;$('#tl').textContent=e.target.value+'%'};
-addEventListener('keydown',e=>{if(/INPUT|SELECT/.test(e.target.tagName)&&e.target.type!=='range')return;if(capt){e.preventDefault();if(e.code!=='Escape'){setp(capt.m,capt.n,e.code);commit()}capt=null;rEdit();return}keys.add(e.code);
+addEventListener('keydown',e=>{if(/INPUT|SELECT/.test(e.target.tagName)&&e.target.type!=='range')return;if(capt){e.preventDefault();if(e.code!=='Escape'){(multi.size>1?[...multi]:[capt.m]).forEach(m=>{if(propsOf(m)===propsOf(capt.m))setp(m,capt.n,e.code)});commit()}capt=null;rEdit();return}keys.add(e.code);
  if(e.code==='Escape'){if(armed&&cur===''){disarm();return}if(!game)return;if(cur==='')open('pause');else if(cur==='pause')open('');else if(cur!=='menu')open(back||'');return}
  if(cur!=='')return;if(e.ctrlKey&&e.code==='KeyZ'&&!e.shiftKey){e.preventDefault();undo();return}if(e.ctrlKey&&(e.code==='KeyY'||e.code==='KeyZ'&&e.shiftKey)){e.preventDefault();redoF();return}if(e.code==='KeyA'||e.code==='ArrowLeft')steer=-1;if(e.code==='KeyD'&&!e.ctrlKey||e.code==='ArrowRight')steer=1;if(e.code==='KeyW'||e.code==='ArrowUp')dir=1;if(e.code==='KeyS'||e.code==='ArrowDown')dir=-1;if(mode==='play')setDrive();
  if(mode!=='build')return;if(e.code==='Digit1'){tool='move';applyTool()}if(e.code==='Digit2'){tool='rot';applyTool()}if(e.code==='Digit3'){tool='scale';applyTool()}if(e.code==='Digit4'){tool='edit';applyTool()}
@@ -376,11 +394,11 @@ function norm(d){if(!d||typeof d!=='object'||!Array.isArray(d.parts)||!Number.is
  if(d.ver>VER)throw Error(`This build was made in a newer Sprocket (v${d.ver}). Update the game to open it`);
  while(d.ver<VER){d=(MIG[d.ver]||(x=>x))(d);d.ver++}
  d.parts.forEach(p=>{if(!p||!PARTS[p.t]||![p.p,p.r,p.s].every((a,k)=>Array.isArray(a)&&a.length===(k===1?4:3)&&a.every(Number.isFinite))||!p.s.every(v=>v>.01&&v<100)||(PARTS[p.t].lk&&!(Number.isInteger(p.a)&&Number.isInteger(p.b)&&[p.la,p.lb].every(a=>Array.isArray(a)&&a.length===3&&a.every(Number.isFinite)))))throw Error('This build contains invalid parts')});return d}
-async function shot(){const a=[cam.alpha,cam.beta,cam.radius,cam.target.clone()],s=sel;gz.attachToMesh(null);
- if(parts.length){const mn=new V(1e9,1e9,1e9),mx=mn.scale(-1);parts.forEach(m=>{m.computeWorldMatrix(true);const b=m.getBoundingInfo().boundingBox;mn.minimizeInPlace(b.minimumWorld);mx.maximizeInPlace(b.maximumWorld)});
-  cam.target=V.Center(mn,mx);cam.radius=Math.max(4,mx.subtract(mn).length()*1.4)}
- cam.alpha=-.8;cam.beta=1.15;scene.render();const d=await BABYLON.Tools.CreateScreenshotUsingRenderTargetAsync(engine,cam,{width:360,height:225},'image/jpeg');
- [cam.alpha,cam.beta,cam.radius,cam.target]=a;if(s)gz.attachToMesh(s);return d}
+const grab=()=>{try{const c=document.createElement('canvas');c.width=360;c.height=225;const x=c.getContext('2d'),W=cv.width,H=cv.height;let sw=W,sh=W*225/360;if(sh>H){sh=H;sw=H*360/225}x.drawImage(cv,(W-sw)/2,(H-sh)/2,sw,sh,0,0,360,225);const px=x.getImageData(0,0,360,225).data;let t=0;for(let i=0;i<px.length;i+=388)t+=px[i]+px[i+1]+px[i+2];return t>60?c.toDataURL('image/jpeg',.85):null}catch(e){return null}};
+async function shot(){const a=[cam.alpha,cam.beta,cam.radius,cam.target.clone()],s=sel,mm=[...multi];gz.attachToMesh(null);hdl.forEach(h=>h.setEnabled(false));mark.setEnabled(false);if(ghost)ghost.setEnabled(false);
+ const bl=parts.filter(m=>!m.metadata.link);if(bl.length){const mn=new V(1e9,1e9,1e9),mx=mn.scale(-1);bl.forEach(m=>{m.computeWorldMatrix(true);const b=m.getBoundingInfo().boundingBox;mn.minimizeInPlace(b.minimumWorld);mx.maximizeInPlace(b.maximumWorld)});cam.setTarget(V.Center(mn,mx),false,true,true);cam.radius=Math.max(3,mx.subtract(mn).length()*1.5)}
+ cam.alpha=-.8;cam.beta=1.15;scene.render();let d=grab();if(!d){try{d=await BABYLON.Tools.CreateScreenshotUsingRenderTargetAsync(engine,cam,{width:360,height:225},'image/jpeg')}catch(e){d=''}}
+ cam.setTarget(a[3],false,true,true);cam.alpha=a[0];cam.beta=a[1];cam.radius=a[2];if(s){gz.attachToMesh(s);multi=new Set(mm);hl()}return d||''}
 const ask=(q,def)=>new Promise(r=>{$('#aq').textContent=q;$('#ai').value=def||'';$('#ask').classList.add('on');$('#ai').focus();const f=v=>{$('#ask').classList.remove('on');r(v)};$('#ak').onclick=()=>f($('#ai').value.trim()||null);$('#ac').onclick=()=>f(null);$('#ai').onkeydown=e=>{if(e.key==='Enter')f($('#ai').value.trim()||null)}});
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let pg=0,cache=[];

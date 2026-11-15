@@ -111,13 +111,13 @@ const PARTS={
  brace_t:{n:'Titanium brace',g:'Bracing',m:'ti',s:[.08,.08,1],col:'#c5ccd6',lk:1},
  arm_hi:{n:'Upper arm',g:'Suspension',hide:1,m:'steel',s:[.5,.06,.6],col:'#b0bac4',prism:1,wb:1,nk:1,arm:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'K',5:'W'}},
  arm_lo:{n:'Lower arm (sprung)',g:'Suspension',hide:1,m:'steel',s:[.5,.06,.6],col:'#b0bac4',prism:1,wb:1,arm:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'K',5:'W'}},
- upr:{n:'Wheel carrier',g:'Suspension',hide:1,mm:30,m:'steel',s:[.12,.56,.12],col:'#8d98a3',fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'K'}},
- car:{n:'Steering carrier',g:'Suspension',hide:1,mm:30,m:'steel',s:[.12,.56,.06],col:'#8d98a3',car:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'Q',5:'K'}},
- spn:{n:'Steering spindle',g:'Suspension',hide:1,mm:25,m:'steel',s:[.12,.56,.06],col:'#2f7d6d',jt:2,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'Q'}},
+ upr:{n:'Wheel carrier',g:'Suspension',hide:1,mm:30,im:10,m:'steel',s:[.12,.56,.12],col:'#8d98a3',fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'K'}},
+ car:{n:'Steering carrier',g:'Suspension',hide:1,mm:30,im:10,m:'steel',s:[.12,.56,.06],col:'#8d98a3',car:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'Q',5:'K'}},
+ spn:{n:'Steering spindle',g:'Suspension',hide:1,mm:25,im:10,m:'steel',s:[.12,.56,.06],col:'#2f7d6d',jt:2,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'Q'}},
  dwb:{n:'Dual wishbone',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#b0bac4',macro:1,mac:[['arm_hi',[0,.25,-.06]],['arm_lo',[0,-.25,-.06]],['upr',[0,0,.3]]],pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'W'}},
  dwbs:{n:'Dual wishbone (steering)',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#2f7d6d',macro:1,mac:[['arm_hi',[0,.25,-.06]],['arm_lo',[0,-.25,-.06]],['car',[0,0,.27]],['spn',[0,0,.33]]],pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'W'}},
- act_b:{n:'Actuator body',g:'Actuators',hide:1,mm:60,m:'steel',s:[.2,.2,.4],col:'#5d6b7a',act:1,fk:{4:'N'}},
- act_r:{n:'Actuator rod',g:'Actuators',hide:1,mm:60,m:'steel',s:[.1,.1,.4],col:'#c9ced3',fk:{0:'N',1:'N',2:'N',3:'N',5:'N'}},
+ act_b:{n:'Actuator body',g:'Actuators',hide:1,mm:60,im:20,m:'steel',s:[.2,.2,.4],col:'#5d6b7a',act:1,fk:{4:'N'}},
+ act_r:{n:'Actuator rod',g:'Actuators',hide:1,mm:60,im:20,m:'steel',s:[.1,.1,.4],col:'#c9ced3',fk:{0:'N',1:'N',2:'N',3:'N',5:'N'}},
  act:{n:'Linear actuator',g:'Actuators',m:'steel',s:[.2,.2,.43],col:'#5d6b7a',macro:1,mac:[['act_b',[0,0,-.015]],['act_r',[0,0,.015]]],out:4,fk:{4:'N'}},
  wish:{n:'Wishbone (old single arm)',g:'Suspension',hide:1,m:'steel',s:[.5,.08,.8],col:'#b0bac4',prism:1,wb:1,pf:5,fk:{5:'W'}},
  spring:{n:'Coil spring',g:'Suspension',m:'steel',s:[.12,.12,1],col:'#d8dde2',lk:1,spr:1},
@@ -301,7 +301,7 @@ function mkBody(m,i){if(PARTS[m.metadata.t].lk)return null;const t=m.metadata.t,
  const sh=d.cyl?new J.CylinderShape(s.y/2,s.x/2,.02,null):new J.BoxShape(new J.Vec3(s.x/2,s.y/2,s.z/2),Math.min(.02,s.x/2,s.y/2,s.z/2),null);
  const bc=new J.BodyCreationSettings(sh,new J.RVec3(p.x,p.y,p.z),new J.Quat(q.x,q.y,q.z,q.w),J.EMotionType_Dynamic,1);
  bc.mOverrideMassProperties=J.EOverrideMassProperties_CalculateInertia;bc.mMassPropertiesOverride.mMass=massOf(m);
- bc.mFriction=d.cyl?1.2:.5;bc.mAllowSleeping=false;bc.mMotionQuality=Q.cq?J.EMotionQuality_LinearCast:J.EMotionQuality_Discrete;
+ bc.mInertiaMultiplier=d.im||1;bc.mFriction=d.cyl?1.2:.5;bc.mAllowSleeping=false;bc.mMotionQuality=Q.cq?J.EMotionQuality_LinearCast:J.EMotionQuality_Discrete;
  bc.mCollisionGroup.SetGroupFilter(gf);bc.mCollisionGroup.SetGroupID(0);bc.mCollisionGroup.SetSubGroupID(i);
  const b=bi.CreateBody(bc);bi.AddBody(b.GetID(),J.EActivation_Activate);J.destroy(bc);return b}
 const cc=(st,a,b)=>st.Create?st.Create(a,b):st.CreateConstraint(a,b);
@@ -329,11 +329,15 @@ function pose(con){const T=.26,gr={};parts.forEach((m,i)=>{const g=m.metadata.g;
   sub.forEach(i=>parts[i].position.addInPlace(dl))})}
 function qtie(i,j){const ic=PARTS[parts[i].metadata.t].car?i:j,is=ic===i?j:i,c=parts[ic],sp2=parts[is],O=obb(c),a=ax(c,V.Up()),h=mkh(O.c.add(O.A[2].scale(O.h[2])),a,ax(c,V.Right()),ic,is),R=gp(sp2,'rng')*Math.PI/180;
  h.SetLimits(-R-.05,R+.05);h.SetMotorState(J.EMotorState_Velocity);try{const m=h.GetMotorSettings(),T=6000*gp(sp2,'tq')/100;m.mMaxTorqueLimit=T;m.mMinTorqueLimit=-T}catch(e){}servos.push({h,sg:Math.sign(a.y)||1,rng:R,kl:gp(sp2,'kl'),kr:gp(sp2,'kr'),kp:gp(sp2,'hz')*2,vm:gp(sp2,'hz')*.8})}
+function guard(a){const pb=a.b.GetPosition(),pr=a.r.GetPosition(),q=a.b.GetRotation(),rq=a.r.GetRotation(),Q=new BABYLON.Quaternion(q.GetX(),q.GetY(),q.GetZ(),q.GetW()),az=new V(0,0,1).rotateByQuaternionToRef(Q,new V()),
+ d=new V(pr.GetX()-pb.GetX(),pr.GetY()-pb.GetY(),pr.GetZ()-pb.GetZ()),al=V.Dot(d,az),lat=d.subtract(az.scale(al)),dot=Math.abs(q.GetX()*rq.GetX()+q.GetY()*rq.GetY()+q.GetZ()*rq.GetZ()+q.GetW()*rq.GetW());
+ if(lat.length()>.01||dot<.9995||al<a.d0-.02||al>a.d0+a.st+.02){const c=Math.max(a.d0,Math.min(a.d0+a.st,al)),np=new V(pb.GetX(),pb.GetY(),pb.GetZ()).add(az.scale(c)),id=a.r.GetID(),v=a.b.GetLinearVelocity();
+  bi.SetPositionAndRotation(id,new J.RVec3(np.x,np.y,np.z),new J.Quat(q.GetX(),q.GetY(),q.GetZ(),q.GetW()),J.EActivation_Activate);bi.SetLinearVelocity(id,new J.Vec3(v.GetX(),v.GetY(),v.GetZ()));bi.SetAngularVelocity(id,a.b.GetAngularVelocity())}}
 function slider(ib,ir){const b=parts[ib],a=obb(b).A[2],ax2=new J.Vec3(a.x,a.y,a.z),s=new J.SliderConstraintSettings(),st=gp(b,'st');s.mSpace=J.EConstraintSpace_WorldSpace;s.mAutoDetectPoint=true;
  if(s.SetSliderAxis)s.SetSliderAxis(ax2);else{s.mSliderAxis1=ax2;s.mSliderAxis2=ax2}s.mLimitsMin=-.005;s.mLimitsMax=st+.005;
  const c=J.castObject(cc(s,bodies[ib],bodies[ir]),J.SliderConstraint);phys.AddConstraint(c);gf.DisableCollision(ib,ir);try{c.SetLimits(0,st)}catch(e){}c.SetMotorState(J.EMotorState_Position);c.SetTargetPosition(0);
  try{const m=c.GetMotorSettings(),F=60000*gp(b,'af')/100;m.mMaxForceLimit=F;m.mMinForceLimit=-F;m.mSpringSettings.mFrequency=gp(b,'hz');m.mSpringSettings.mDamping=1}catch(e){}
- acts.push({c,pos:0,st,sp:gp(b,'as'),ke:gp(b,'ke'),kq:gp(b,'kq')})}
+ acts.push({c,pos:0,st,sp:gp(b,'as'),ke:gp(b,'ke'),kq:gp(b,'kq'),b:bodies[ib],r:bodies[ir],d0:V.Dot(parts[ir].position.subtract(b.position),a)})}
 function wbone(iw,io){const w=parts[iw],O=obb(w),h=mkh(O.c.add(O.A[2].scale(-O.h[2])),ax(w,V.Right()),ax(w,V.Up()),io,iw);droop(w)>0?h.SetLimits(-.6,.3):h.SetLimits(-.3,.6);
  if(w.metadata.k!==undefined){h.SetMotorState(J.EMotorState_Position);h.SetTargetAngle(0);try{const m=h.GetMotorSettings();m.mSpringSettings.mFrequency=w.metadata.k;m.mSpringSettings.mDamping=w.metadata.z}catch(e){}}}
 function ktie(i,j){const ia=PARTS[parts[i].metadata.t].arm?i:j,iu=ia===i?j:i,a=parts[ia],O=obb(a);mkh(O.c.add(O.A[2].scale(O.h[2])),ax(a,V.Right()),ax(a,V.Up()),iu,ia)}
@@ -362,7 +366,7 @@ const setDrive=()=>{};
 function drive(h){const dn=c=>keys.has(c)?1:0;motors.forEach(m=>{const a=m.h.GetCurrentAngle();let d=a-m.pa;if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;m.av=d/h;m.pa=a;const inp=dn(m.kf)-dn(m.kb);
   if(m.fw&&!inp){if(!m.free){m.h.SetMotorState(J.EMotorState_Off);m.free=true}m.v=m.av;return}
   if(m.free){m.h.SetMotorState(J.EMotorState_Velocity);m.free=false;m.v=m.av}
-  m.v+=Math.max(-m.ac*h,Math.min(m.ac*h,inp*m.sp*m.sg-m.v));m.h.SetTargetAngularVelocity(m.v)});servos.forEach(s=>{const e=(dn(s.kr)-dn(s.kl))*s.rng*s.sg-s.h.GetCurrentAngle();s.h.SetTargetAngularVelocity(Math.max(-s.vm,Math.min(s.vm,e*s.kp)))});acts.forEach(a=>{a.pos=Math.max(0,Math.min(a.st,a.pos+(dn(a.ke)-dn(a.kq))*a.sp*h));a.c.SetTargetPosition(a.pos)})}
+  m.v+=Math.max(-m.ac*h,Math.min(m.ac*h,inp*m.sp*m.sg-m.v));m.h.SetTargetAngularVelocity(m.v)});servos.forEach(s=>{const e=(dn(s.kr)-dn(s.kl))*s.rng*s.sg-s.h.GetCurrentAngle();s.h.SetTargetAngularVelocity(Math.max(-s.vm,Math.min(s.vm,e*s.kp)))});acts.forEach(a=>{guard(a);a.pos=Math.max(0,Math.min(a.st,a.pos+(dn(a.ke)-dn(a.kq))*a.sp*h));a.c.SetTargetPosition(a.pos)})}
 function tick(h){for(let k=cons.length;k--;){try{const l=cons[k].c.GetTotalLambdaPosition();if(Math.hypot(l.GetX(),l.GetY(),l.GetZ())/h>cons[k].max){phys.RemoveConstraint(cons[k].c);cons.splice(k,1)}}catch(e){}}drive(h);jolt.Step(h,1)}
 function stepPhys(dt){acc+=dt*ts;const h=1/QS[OPT.q].hz;let n=0;while(acc>=h&&n++<12){tick(h);acc-=h}if(n>12)acc=0;
  const c=new V();bodies.forEach((b,i)=>{if(!b)return;const p=b.GetPosition(),r=b.GetRotation(),m=parts[i];m.position.set(p.GetX(),p.GetY(),p.GetZ());m.rotationQuaternion.set(r.GetX(),r.GetY(),r.GetZ(),r.GetW());c.addInPlace(m.position)});

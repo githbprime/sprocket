@@ -111,13 +111,13 @@ const PARTS={
  brace_t:{n:'Titanium brace',g:'Bracing',m:'ti',s:[.08,.08,1],col:'#c5ccd6',lk:1},
  arm_hi:{n:'Upper arm',g:'Suspension',hide:1,m:'steel',s:[.5,.06,.6],col:'#b0bac4',prism:1,wb:1,nk:1,arm:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'K',5:'W'}},
  arm_lo:{n:'Lower arm (sprung)',g:'Suspension',hide:1,m:'steel',s:[.5,.06,.6],col:'#b0bac4',prism:1,wb:1,arm:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'K',5:'W'}},
- upr:{n:'Wheel carrier',g:'Suspension',hide:1,m:'steel',s:[.12,.56,.12],col:'#8d98a3',fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'K'}},
- car:{n:'Steering carrier',g:'Suspension',hide:1,m:'steel',s:[.12,.56,.06],col:'#8d98a3',car:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'Q',5:'K'}},
- spn:{n:'Steering spindle',g:'Suspension',hide:1,m:'steel',s:[.12,.56,.06],col:'#2f7d6d',jt:2,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'Q'}},
+ upr:{n:'Wheel carrier',g:'Suspension',hide:1,mm:30,m:'steel',s:[.12,.56,.12],col:'#8d98a3',fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'K'}},
+ car:{n:'Steering carrier',g:'Suspension',hide:1,mm:30,m:'steel',s:[.12,.56,.06],col:'#8d98a3',car:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'Q',5:'K'}},
+ spn:{n:'Steering spindle',g:'Suspension',hide:1,mm:25,m:'steel',s:[.12,.56,.06],col:'#2f7d6d',jt:2,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'Q'}},
  dwb:{n:'Dual wishbone',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#b0bac4',macro:1,mac:[['arm_hi',[0,.25,-.06]],['arm_lo',[0,-.25,-.06]],['upr',[0,0,.3]]],pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'W'}},
  dwbs:{n:'Dual wishbone (steering)',g:'Suspension',m:'steel',s:[.5,.56,.72],col:'#2f7d6d',macro:1,mac:[['arm_hi',[0,.25,-.06]],['arm_lo',[0,-.25,-.06]],['car',[0,0,.27]],['spn',[0,0,.33]]],pf:5,out:4,up:1,fk:{0:'N',1:'N',2:'N',3:'N',4:'S',5:'W'}},
- act_b:{n:'Actuator body',g:'Actuators',hide:1,m:'steel',s:[.2,.2,.4],col:'#5d6b7a',act:1,fk:{4:'N'}},
- act_r:{n:'Actuator rod',g:'Actuators',hide:1,m:'steel',s:[.1,.1,.4],col:'#c9ced3',fk:{0:'N',1:'N',2:'N',3:'N',5:'N'}},
+ act_b:{n:'Actuator body',g:'Actuators',hide:1,mm:60,m:'steel',s:[.2,.2,.4],col:'#5d6b7a',act:1,fk:{4:'N'}},
+ act_r:{n:'Actuator rod',g:'Actuators',hide:1,mm:60,m:'steel',s:[.1,.1,.4],col:'#c9ced3',fk:{0:'N',1:'N',2:'N',3:'N',5:'N'}},
  act:{n:'Linear actuator',g:'Actuators',m:'steel',s:[.2,.2,.43],col:'#5d6b7a',macro:1,mac:[['act_b',[0,0,-.015]],['act_r',[0,0,.015]]],out:4,fk:{4:'N'}},
  wish:{n:'Wishbone (old single arm)',g:'Suspension',hide:1,m:'steel',s:[.5,.08,.8],col:'#b0bac4',prism:1,wb:1,pf:5,fk:{5:'W'}},
  spring:{n:'Coil spring',g:'Suspension',m:'steel',s:[.12,.12,1],col:'#d8dde2',lk:1,spr:1},
@@ -168,7 +168,7 @@ function prism(){const T=[[-.5,-.5],[.5,-.5],[0,.5]],P=[],N=[],I=[],add=(vs,n)=>
  const m=new BABYLON.Mesh('p',scene),v=new BABYLON.VertexData();v.positions=P;v.normals=N;v.indices=I;v.applyToMesh(m);return m}
 function mk(t,p,r,s,x){const d=PARTS[t],m=d.cyl?BABYLON.MeshBuilder.CreateCylinder('p',{height:1,diameter:1,tessellation:28},scene):d.prism?prism():d.lk?rod():BABYLON.MeshBuilder.CreateBox('p',{size:1},scene);
  m.material=mat(t);m.position.set(...p);m.rotationQuaternion=new BABYLON.Quaternion(...(r||d.rot||[0,0,0,1]));m.scaling.set(...(s||d.s));m.metadata={t,...((d.spr||d.wb)&&!d.nk?{k:d.wb?6:4,z:d.wb?.8:.5}:{}),...(x&&x.k!==undefined?{k:x.k,z:x.z}:{}),g:x&&x.g,pr:x&&x.pr?{...x.pr}:undefined};sgen&&sgen.addShadowCaster(m);parts.push(m);dec(m,d);return m}
-const EC=new BABYLON.Color4(.03,.04,.06,1),SC=new BABYLON.Color4(.95,.69,.2,1),massOf=m=>{const d=PARTS[m.metadata.t],s=m.scaling;return Math.max(1,s.x*s.y*s.z*(d.cyl?.785:1)*mprops(m)[1]*.25)};
+const EC=new BABYLON.Color4(.03,.04,.06,1),SC=new BABYLON.Color4(.95,.69,.2,1),massOf=m=>{const d=PARTS[m.metadata.t],s=m.scaling;return Math.max(d.mm||1,s.x*s.y*s.z*(d.cyl?.785:1)*mprops(m)[1]*.25)};
 const am=()=>mc._a||(mc._a=(()=>{const m=new BABYLON.StandardMaterial('a',scene);m.diffuseColor=BABYLON.Color3.FromHexString('#f2b134');m.emissiveColor=new BABYLON.Color3(.3,.18,0);return m})());
 function dec(m,d){try{m.enableEdgesRendering(.95);m.edgesWidth=2.5;m.edgesColor=EC}catch(e){}
  const kid=c=>{c.parent=m;c.material=am();c.isPickable=false},B=BABYLON.MeshBuilder;
@@ -313,21 +313,22 @@ const ax=(m,v)=>v.rotateByQuaternionToRef(m.rotationQuaternion,new V());
 function hinge(iw,io){const w=parts[iw],a=ax(w,V.Up()),h=mkh(w.position,a,ax(w,V.Right()),io,iw);
  if(parts[io].metadata.t==='motor'){h.SetMotorState(J.EMotorState_Velocity);const v=V.Cross(a,V.Up()),fw=ax(parts.find(isCore)||w,V.Forward());{const mo=parts[io],T=1500*gp(mo,'pw')/100;try{const ms=h.GetMotorSettings();ms.mMaxTorqueLimit=T;ms.mMinTorqueLimit=-T}catch(e){}motors.push({h,sg:Math.sign(V.Dot(v,fw))||1,v:0,sp:gp(mo,'sp'),ac:gp(mo,'ac'),kf:gp(mo,'kf'),kb:gp(mo,'kb')})}}}
 function joint(ih,io){const h=parts[ih],O=obb(h),a=ax(h,V.Up()),c=mkh(O.c.add(O.A[2].scale(O.h[2])),a,ax(h,V.Right()),ih,io);
- if(PARTS[h.metadata.t].jt===2){const R=gp(h,'rng')*Math.PI/180;c.SetLimits(-R-.05,R+.05);c.SetMotorState(J.EMotorState_Position);try{const m=c.GetMotorSettings();m.mSpringSettings.mFrequency=gp(h,'hz');m.mSpringSettings.mDamping=1;const T=6000*gp(h,'tq')/100;m.mMaxTorqueLimit=T;m.mMinTorqueLimit=-T}catch(e){}servos.push({h:c,sg:Math.sign(a.y)||1,rng:R,kl:gp(h,'kl'),kr:gp(h,'kr')})}}
+ if(PARTS[h.metadata.t].jt===2){const R=gp(h,'rng')*Math.PI/180;c.SetLimits(-R-.05,R+.05);c.SetMotorState(J.EMotorState_Velocity);try{const m=c.GetMotorSettings(),T=6000*gp(h,'tq')/100;m.mMaxTorqueLimit=T;m.mMinTorqueLimit=-T}catch(e){}servos.push({h:c,sg:Math.sign(a.y)||1,rng:R,kl:gp(h,'kl'),kr:gp(h,'kr'),kp:gp(h,'hz')*2,vm:gp(h,'hz')*.8})}}
 function spring(m,ia,ib){const l=m.metadata.link,a=parts[ia],b=parts[ib];[a,b].forEach(x=>x.computeWorldMatrix(true));const p1=V.TransformCoordinates(l.la,a.getWorldMatrix()),p2=V.TransformCoordinates(l.lb,b.getWorldMatrix()),d=new J.DistanceConstraintSettings();
  d.mSpace=J.EConstraintSpace_WorldSpace;d.mPoint1=new J.RVec3(p1.x,p1.y,p1.z);d.mPoint2=new J.RVec3(p2.x,p2.y,p2.z);d.mMinDistance=d.mMaxDistance=V.Distance(p1,p2);
  try{d.mLimitsSpringSettings.mFrequency=m.metadata.k;d.mLimitsSpringSettings.mDamping=m.metadata.z}catch(x){d.mFrequency=m.metadata.k;d.mDamping=m.metadata.z}
  phys.AddConstraint(cc(d,bodies[ia],bodies[ib]));gf.DisableCollision(ia,ib)}
 const droop=w=>Math.sign(V.Dot(V.Cross(ax(w,V.Right()),ax(w,V.Forward())),new V(0,-1,0)))||1;
 function contacts(){const out=[],n=parts.length;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const A=parts[i],B=parts[j];if(A.metadata.link||B.metadata.link)continue;const r=rel(obb(A),obb(B));if(!Array.isArray(r)||!r[0])continue;const c=r[0],ka=fk(A,c.fa),kb=fk(B,c.fb);if(ok(ka,kb))out.push({i,j,ka,kb})}return out}
+function actPair(i){const g=parts[i].metadata.g,t=parts[i].metadata.t;if(!g||t!=='act_b'&&t!=='act_r')return;const o=t==='act_b'?'act_r':'act_b',k=parts.findIndex(p=>p.metadata.g===g&&p.metadata.t===o);return k<0?undefined:k}
 function pose(con){const T=.26,gr={};parts.forEach((m,i)=>{const g=m.metadata.g;if(g&&PARTS[m.metadata.t].arm)(gr[g]=gr[g]||[]).push(i)});
  Object.values(gr).forEach(ar=>{const A=parts[ar[0]],a=ax(A,V.Right()),d=ax(A,V.Forward()),Rq=BABYLON.Quaternion.RotationAxis(a,T*droop(A)),L=obb(A).h[2]*2,dl=d.scale(L).rotateByQuaternionToRef(Rq,new V()).subtract(d.scale(L)),sub=new Set(),st=[];
   con.forEach(c=>{if(c.ka==='K'&&c.kb==='K')[c.i,c.j].forEach(x=>{if(!ar.includes(x)&&(ar.includes(c.i)||ar.includes(c.j))&&!sub.has(x)){sub.add(x);st.push(x)}})});
-  while(st.length){const x=st.pop();con.forEach(c=>{const y=c.i===x?c.j:c.j===x?c.i:-1;if(y>=0&&!sub.has(y)&&!ar.includes(y)&&!PARTS[parts[y].metadata.t].core){sub.add(y);st.push(y)}})}
+  while(st.length){const x=st.pop(),pa=actPair(x);if(pa!==undefined&&!sub.has(pa)&&!ar.includes(pa)){sub.add(pa);st.push(pa)}con.forEach(c=>{const y=c.i===x?c.j:c.j===x?c.i:-1;if(y>=0&&!sub.has(y)&&!ar.includes(y)&&!PARTS[parts[y].metadata.t].core){sub.add(y);st.push(y)}})}
   ar.forEach(i=>{const p=parts[i],O=obb(p),pv=O.c.subtract(O.A[2].scale(O.h[2]));p.position.copyFrom(pv.add(p.position.subtract(pv).rotateByQuaternionToRef(Rq,new V())));p.rotationQuaternion=Rq.multiply(p.rotationQuaternion)});
   sub.forEach(i=>parts[i].position.addInPlace(dl))})}
 function qtie(i,j){const ic=PARTS[parts[i].metadata.t].car?i:j,is=ic===i?j:i,c=parts[ic],sp2=parts[is],O=obb(c),a=ax(c,V.Up()),h=mkh(O.c.add(O.A[2].scale(O.h[2])),a,ax(c,V.Right()),ic,is),R=gp(sp2,'rng')*Math.PI/180;
- h.SetLimits(-R-.05,R+.05);h.SetMotorState(J.EMotorState_Position);try{const m=h.GetMotorSettings();m.mSpringSettings.mFrequency=gp(sp2,'hz');m.mSpringSettings.mDamping=1;const T=6000*gp(sp2,'tq')/100;m.mMaxTorqueLimit=T;m.mMinTorqueLimit=-T}catch(e){}servos.push({h,sg:Math.sign(a.y)||1,rng:R,kl:gp(sp2,'kl'),kr:gp(sp2,'kr')})}
+ h.SetLimits(-R-.05,R+.05);h.SetMotorState(J.EMotorState_Velocity);try{const m=h.GetMotorSettings(),T=6000*gp(sp2,'tq')/100;m.mMaxTorqueLimit=T;m.mMinTorqueLimit=-T}catch(e){}servos.push({h,sg:Math.sign(a.y)||1,rng:R,kl:gp(sp2,'kl'),kr:gp(sp2,'kr'),kp:gp(sp2,'hz')*2,vm:gp(sp2,'hz')*.8})}
 function slider(ib,ir){const b=parts[ib],a=obb(b).A[2],ax2=new J.Vec3(a.x,a.y,a.z),s=new J.SliderConstraintSettings(),st=gp(b,'st');s.mSpace=J.EConstraintSpace_WorldSpace;s.mAutoDetectPoint=true;
  if(s.SetSliderAxis)s.SetSliderAxis(ax2);else{s.mSliderAxis1=ax2;s.mSliderAxis2=ax2}s.mLimitsMin=-.005;s.mLimitsMax=st+.005;
  const c=J.castObject(cc(s,bodies[ib],bodies[ir]),J.SliderConstraint);phys.AddConstraint(c);gf.DisableCollision(ib,ir);c.SetMotorState(J.EMotorState_Position);c.SetTargetPosition(0);
@@ -341,7 +342,7 @@ function startPlay0(){if(!J)return toast('Physics is still loading');
  const st=new J.JoltSettings(),of=new J.ObjectLayerPairFilterTable(2);of.EnableCollision(0,1);of.EnableCollision(1,1);
  const bp=new J.BroadPhaseLayerInterfaceTable(2,2);bp.MapObjectToBroadPhaseLayer(0,new J.BroadPhaseLayer(0));bp.MapObjectToBroadPhaseLayer(1,new J.BroadPhaseLayer(1));
  st.mObjectLayerPairFilter=of;st.mBroadPhaseLayerInterface=bp;st.mObjectVsBroadPhaseLayerFilter=new J.ObjectVsBroadPhaseLayerFilterTable(bp,2,of,2);
- jolt=new J.JoltInterface(st);J.destroy(st);phys=jolt.GetPhysicsSystem();bi=phys.GetBodyInterface();try{const ps=phys.GetPhysicsSettings();[ps.mNumVelocitySteps,ps.mNumPositionSteps]=[[10,2],[14,3],[18,4],[20,4]][OPT.q];phys.SetPhysicsSettings(ps)}catch(e){}
+ jolt=new J.JoltInterface(st);J.destroy(st);phys=jolt.GetPhysicsSystem();bi=phys.GetBodyInterface();try{const ps=phys.GetPhysicsSettings();[ps.mNumVelocitySteps,ps.mNumPositionSteps]=[[20,4],[30,5],[40,6],[50,8]][OPT.q];phys.SetPhysicsSettings(ps)}catch(e){}
  const gs=new J.BodyCreationSettings(new J.BoxShape(new J.Vec3(200,.5,200),.05,null),new J.RVec3(0,-.5,0),new J.Quat(0,0,0,1),J.EMotionType_Static,0);
  bi.AddBody(bi.CreateBody(gs).GetID(),J.EActivation_DontActivate);J.destroy(gs);
  const n=parts.length;gf=new J.GroupFilterTable(n);const con=contacts();pose(con);bodies=parts.map(mkBody);cons=[];motors=[];servos=[];links=[];acts=[];steer=0;parts.forEach(m=>m.computeWorldMatrix(true));
@@ -358,7 +359,7 @@ function startPlay0(){if(!J)return toast('Physics is still loading');
 function startPlay(){try{startPlay0()}catch(e){fail('Play: '+(e&&e.stack||e));try{if(jolt)J.destroy(jolt)}catch(x){}jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';if(snap)load(snap)}}
 function stopPlay(){if(mode!=='play')return;J.destroy(jolt);jolt=null;mode='build';document.body.classList.remove('play');$('#bm').textContent='Play';load(snap);resync()}
 const setDrive=()=>{};
-function drive(h){const dn=c=>keys.has(c)?1:0;motors.forEach(m=>{const t=(dn(m.kf)-dn(m.kb))*m.sp*m.sg;m.v+=Math.max(-m.ac*h,Math.min(m.ac*h,t-m.v));m.h.SetTargetAngularVelocity(m.v)});servos.forEach(s=>s.h.SetTargetAngle((dn(s.kr)-dn(s.kl))*s.rng*s.sg));acts.forEach(a=>{a.pos=Math.max(0,Math.min(a.st,a.pos+(dn(a.ke)-dn(a.kq))*a.sp*h));a.c.SetTargetPosition(a.pos)})}
+function drive(h){const dn=c=>keys.has(c)?1:0;motors.forEach(m=>{const t=(dn(m.kf)-dn(m.kb))*m.sp*m.sg;m.v+=Math.max(-m.ac*h,Math.min(m.ac*h,t-m.v));m.h.SetTargetAngularVelocity(m.v)});servos.forEach(s=>{const e=(dn(s.kr)-dn(s.kl))*s.rng*s.sg-s.h.GetCurrentAngle();s.h.SetTargetAngularVelocity(Math.max(-s.vm,Math.min(s.vm,e*s.kp)))});acts.forEach(a=>{a.pos=Math.max(0,Math.min(a.st,a.pos+(dn(a.ke)-dn(a.kq))*a.sp*h));a.c.SetTargetPosition(a.pos)})}
 function tick(h){for(let k=cons.length;k--;){try{const l=cons[k].c.GetTotalLambdaPosition();if(Math.hypot(l.GetX(),l.GetY(),l.GetZ())/h>cons[k].max){phys.RemoveConstraint(cons[k].c);cons.splice(k,1)}}catch(e){}}drive(h);jolt.Step(h,1)}
 function stepPhys(dt){acc+=dt*ts;const h=1/QS[OPT.q].hz;let n=0;while(acc>=h&&n++<12){tick(h);acc-=h}if(n>12)acc=0;
  const c=new V();bodies.forEach((b,i)=>{if(!b)return;const p=b.GetPosition(),r=b.GetRotation(),m=parts[i];m.position.set(p.GetX(),p.GetY(),p.GetZ());m.rotationQuaternion.set(r.GetX(),r.GetY(),r.GetZ(),r.GetW());c.addInPlace(m.position)});
@@ -394,16 +395,23 @@ function norm(d){if(!d||typeof d!=='object'||!Array.isArray(d.parts)||!Number.is
  if(d.ver>VER)throw Error(`This build was made in a newer Sprocket (v${d.ver}). Update the game to open it`);
  while(d.ver<VER){d=(MIG[d.ver]||(x=>x))(d);d.ver++}
  d.parts.forEach(p=>{if(!p||!PARTS[p.t]||![p.p,p.r,p.s].every((a,k)=>Array.isArray(a)&&a.length===(k===1?4:3)&&a.every(Number.isFinite))||!p.s.every(v=>v>.01&&v<100)||(PARTS[p.t].lk&&!(Number.isInteger(p.a)&&Number.isInteger(p.b)&&[p.la,p.lb].every(a=>Array.isArray(a)&&a.length===3&&a.every(Number.isFinite)))))throw Error('This build contains invalid parts')});return d}
-const grab=()=>{try{const c=document.createElement('canvas');c.width=360;c.height=225;const x=c.getContext('2d'),W=cv.width,H=cv.height;let sw=W,sh=W*225/360;if(sh>H){sh=H;sw=H*360/225}x.drawImage(cv,(W-sw)/2,(H-sh)/2,sw,sh,0,0,360,225);const px=x.getImageData(0,0,360,225).data;let t=0;for(let i=0;i<px.length;i+=388)t+=px[i]+px[i+1]+px[i+2];return t>60?c.toDataURL('image/jpeg',.85):null}catch(e){return null}};
-async function shot(){const a=[cam.alpha,cam.beta,cam.radius,cam.target.clone()],s=sel,mm=[...multi];gz.attachToMesh(null);hdl.forEach(h=>h.setEnabled(false));mark.setEnabled(false);if(ghost)ghost.setEnabled(false);
- const bl=parts.filter(m=>!m.metadata.link);if(bl.length){const mn=new V(1e9,1e9,1e9),mx=mn.scale(-1);bl.forEach(m=>{m.computeWorldMatrix(true);const b=m.getBoundingInfo().boundingBox;mn.minimizeInPlace(b.minimumWorld);mx.maximizeInPlace(b.maximumWorld)});cam.setTarget(V.Center(mn,mx),false,true,true);cam.radius=Math.max(3,mx.subtract(mn).length()*1.5)}
- cam.alpha=-.8;cam.beta=1.15;scene.render();let d=grab();if(!d){try{d=await BABYLON.Tools.CreateScreenshotUsingRenderTargetAsync(engine,cam,{width:360,height:225},'image/jpeg')}catch(e){d=''}}
- cam.setTarget(a[3],false,true,true);cam.alpha=a[0];cam.beta=a[1];cam.radius=a[2];if(s){gz.attachToMesh(s);multi=new Set(mm);hl()}return d||''}
+function thumb(){const W=360,H=225,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2a3947');g.addColorStop(1,'#151c23');x.fillStyle=g;x.fillRect(0,0,W,H);
+ if(!parts.length)return c.toDataURL('image/jpeg',.85);const ms=[];parts.forEach(m=>{ms.push(m);m.getChildMeshes().forEach(k=>ms.push(k))});
+ const mn=new V(1e9,1e9,1e9),mx=mn.scale(-1);parts.forEach(m=>{m.computeWorldMatrix(true);const b=m.getBoundingInfo().boundingBox;mn.minimizeInPlace(b.minimumWorld);mx.maximizeInPlace(b.maximumWorld)});
+ const ct=V.Center(mn,mx),rad=Math.max(.5,mx.subtract(mn).length()/2),al=-.8,be=1.15,fov=.8,r=rad/Math.sin(fov/2)*1.15,eye=ct.add(new V(Math.cos(al)*Math.sin(be),Math.cos(be),Math.sin(al)*Math.sin(be)).scale(r));
+ const vw=BABYLON.Matrix.LookAtLH(eye,ct,V.Up()),pj=BABYLON.Matrix.PerspectiveFovLH(fov,W/H,.1,1000),vp=vw.multiply(pj),L=new V(.5,1,.4).normalize(),tris=[];
+ ms.forEach(m=>{const pos=m.getVerticesData(BABYLON.VertexBuffer.PositionKind),ind=m.getIndices();if(!pos||!ind||!m.isEnabled())return;const wm=m.computeWorldMatrix(true),mt=m.material,col=mt&&mt.diffuseColor?mt.diffuseColor:new BABYLON.Color3(.6,.6,.6),a2=mt&&mt.alpha<1?mt.alpha:1,wv=[];
+  for(let i=0;i<pos.length;i+=3)wv.push(V.TransformCoordinates(new V(pos[i],pos[i+1],pos[i+2]),wm));
+  for(let i=0;i<ind.length;i+=3){const a=wv[ind[i]],b=wv[ind[i+1]],d=wv[ind[i+2]],va=V.TransformCoordinates(a,vw),vb=V.TransformCoordinates(b,vw),vd=V.TransformCoordinates(d,vw);if(va.z<.1||vb.z<.1||vd.z<.1)continue;
+   const sh=.4+.6*Math.abs(V.Dot(V.Cross(b.subtract(a),d.subtract(a)).normalize(),L));tris.push({p:[a,b,d].map(q=>{const t=V.TransformCoordinates(q,vp);return[(t.x*.5+.5)*W,(1-(t.y*.5+.5))*H]}),z:(va.z+vb.z+vd.z)/3,c:`rgba(${Math.round(col.r*255*sh)},${Math.round(col.g*255*sh)},${Math.round(col.b*255*sh)},${a2})`})}});
+ tris.sort((p,q)=>q.z-p.z);tris.forEach(t=>{x.fillStyle=t.c;x.strokeStyle=t.c;x.lineWidth=.6;x.beginPath();x.moveTo(...t.p[0]);x.lineTo(...t.p[1]);x.lineTo(...t.p[2]);x.closePath();x.fill();x.stroke()});
+ return c.toDataURL('image/jpeg',.85)}
+async function shot(){try{return thumb()}catch(e){console.warn(e);return ''}}
 const ask=(q,def)=>new Promise(r=>{$('#aq').textContent=q;$('#ai').value=def||'';$('#ask').classList.add('on');$('#ai').focus();const f=v=>{$('#ask').classList.remove('on');r(v)};$('#ak').onclick=()=>f($('#ai').value.trim()||null);$('#ac').onclick=()=>f(null);$('#ai').onkeydown=e=>{if(e.key==='Enter')f($('#ai').value.trim()||null)}});
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let pg=0,cache=[];
 async function rsaves(){try{cache=(await dbAll()).sort((a,b)=>b.mod-a.mod)}catch(e){cache=[];toast('Saving is unavailable in this environment: '+(e&&e.message||e))}const n=Math.max(1,Math.ceil(cache.length/6));pg=Math.min(pg,n-1);
- $('#sl').innerHTML=cache.slice(pg*6,pg*6+6).map(s=>`<div class="sv" data-id="${s.id}"><img src="${s.thumb}"><b>${esc(s.title)}</b><small>${s.parts.length} parts, ${new Date(s.mod).toLocaleDateString()}</small><div><button data-a="load">Load</button><button data-a="upd">Update</button><button data-a="ren">Rename</button><button data-a="del">Delete</button></div></div>`).join('')||'<p class="mu">No saves yet. Use Save as new to store this build.</p>';
+ $('#sl').innerHTML=cache.slice(pg*6,pg*6+6).map(s=>`<div class="sv" data-id="${s.id}">${s.thumb?`<img src="${s.thumb}">`:'<div style="aspect-ratio:16/10;background:#0003;border-radius:4px"></div>'}<b>${esc(s.title)}</b><small>${s.parts.length} parts, ${new Date(s.mod).toLocaleDateString()}</small><div><button data-a="load">Load</button><button data-a="upd" title="Replace this save with the contraption on the build grid now (title kept)">Update</button><button data-a="ren">Rename</button><button data-a="del">Delete</button></div></div>`).join('')||'<p class="mu">No saves yet. Use Save as new to store this build.</p>';
  $('#pgi').textContent=`${pg+1} / ${n}`}
 const rec=(id,title,thumb)=>({id,title,thumb,ver:VER,mod:Date.now(),parts:ser()});
 $('#sn').onclick=async()=>{const t=await ask('Name this build',`Build ${cache.length+1}`);if(!t)return;await persist('put',rec(crypto.randomUUID?crypto.randomUUID():Date.now()+'',t,await shot()));rsaves();toast('Saved')};

@@ -295,7 +295,7 @@ $('#pl').onmouseout=later;fly.onmouseover=keepFly;fly.onmouseout=later;fly.oncli
 rpal();
 
 /* physics */
-let J,jolt,phys,bi,bodies=[],cons=[],motors=[],servos=[],links=[],acts=[],steer=0,gf,acc=0,dir=0;const keys=new Set();
+let J,jolt,phys,bi,bodies=[],cons=[],motors=[],servos=[],links=[],acts=[],uf=[],steer=0,gf,acc=0,dir=0;const keys=new Set();
 if(window.JoltInit)window.JoltInit().then(x=>J=x).catch(e=>toast('Physics failed to start: '+e.message));
 function mkBody(m,i){if(PARTS[m.metadata.t].lk)return null;const t=m.metadata.t,d=PARTS[t],s=m.scaling,q=m.rotationQuaternion,p=m.position,Q=QS[OPT.q];
  const sh=d.cyl?new J.CylinderShape(s.y/2,s.x/2,.02,null):new J.BoxShape(new J.Vec3(s.x/2,s.y/2,s.z/2),Math.min(.02,s.x/2,s.y/2,s.z/2),null);
@@ -306,7 +306,8 @@ function mkBody(m,i){if(PARTS[m.metadata.t].lk)return null;const t=m.metadata.t,
  const b=bi.CreateBody(bc);bi.AddBody(b.GetID(),J.EActivation_Activate);J.destroy(bc);return b}
 const cc=(st,a,b)=>st.Create?st.Create(a,b):st.CreateConstraint(a,b);
 const strength=i=>mprops(parts[i])[2];
-function weld(i,j,k){const f=new J.FixedConstraintSettings();f.mAutoDetectPoint=true;const c=J.castObject(cc(f,bodies[i],bodies[j]),J.FixedConstraint);phys.AddConstraint(c);gf.DisableCollision(i,j);cons.push({c,max:1.5e5*Math.min(strength(i),strength(j),k===undefined?9:strength(k))})}
+const fd=i=>uf[i]===undefined||uf[i]===i?i:(uf[i]=fd(uf[i])),un=(i,j)=>{uf[fd(i)]=fd(j)};
+function weld(i,j,k){un(i,j);const f=new J.FixedConstraintSettings();f.mAutoDetectPoint=true;const c=J.castObject(cc(f,bodies[i],bodies[j]),J.FixedConstraint);phys.AddConstraint(c);gf.DisableCollision(i,j);cons.push({c,max:1.5e5*Math.min(strength(i),strength(j),k===undefined?9:strength(k))})}
 function mkh(p,a,n,b1,b2){const s=new J.HingeConstraintSettings(),R=v=>new J.Vec3(v.x,v.y,v.z);s.mSpace=J.EConstraintSpace_WorldSpace;s.mPoint1=new J.RVec3(p.x,p.y,p.z);s.mPoint2=new J.RVec3(p.x,p.y,p.z);s.mHingeAxis1=R(a);s.mHingeAxis2=R(a);s.mNormalAxis1=R(n);s.mNormalAxis2=R(n);
  const h=J.castObject(cc(s,bodies[b1],bodies[b2]),J.HingeConstraint);phys.AddConstraint(h);gf.DisableCollision(b1,b2);return h}
 const ax=(m,v)=>v.rotateByQuaternionToRef(m.rotationQuaternion,new V());
@@ -331,10 +332,12 @@ function qtie(i,j){const ic=PARTS[parts[i].metadata.t].car?i:j,is=ic===i?j:i,c=p
  h.SetLimits(-R-.05,R+.05);h.SetMotorState(J.EMotorState_Velocity);try{const m=h.GetMotorSettings(),T=6000*gp(sp2,'tq')/100;m.mMaxTorqueLimit=T;m.mMinTorqueLimit=-T}catch(e){}servos.push({h,sg:Math.sign(a.y)||1,rng:R,kl:gp(sp2,'kl'),kr:gp(sp2,'kr'),kp:gp(sp2,'hz')*2,vm:gp(sp2,'hz')*.8})}
 function guard(a){const pb=a.b.GetPosition(),pr=a.r.GetPosition(),q=a.b.GetRotation(),rq=a.r.GetRotation(),Q=new BABYLON.Quaternion(q.GetX(),q.GetY(),q.GetZ(),q.GetW()),az=new V(0,0,1).rotateByQuaternionToRef(Q,new V()),
  d=new V(pr.GetX()-pb.GetX(),pr.GetY()-pb.GetY(),pr.GetZ()-pb.GetZ()),al=V.Dot(d,az),lat=d.subtract(az.scale(al)),dot=Math.abs(q.GetX()*rq.GetX()+q.GetY()*rq.GetY()+q.GetZ()*rq.GetZ()+q.GetW()*rq.GetW());
- if(lat.length()>.01||dot<.9995||al<a.d0-.02||al>a.d0+a.st+.02){const c=Math.max(a.d0,Math.min(a.d0+a.st,al)),np=new V(pb.GetX(),pb.GetY(),pb.GetZ()).add(az.scale(c)),id=a.r.GetID(),v=a.b.GetLinearVelocity();
-  bi.SetPositionAndRotation(id,new J.RVec3(np.x,np.y,np.z),new J.Quat(q.GetX(),q.GetY(),q.GetZ(),q.GetW()),J.EActivation_Activate);bi.SetLinearVelocity(id,new J.Vec3(v.GetX(),v.GetY(),v.GetZ()));bi.SetAngularVelocity(id,a.b.GetAngularVelocity())}}
-function slider(ib,ir){const b=parts[ib],a=obb(b).A[2],ax2=new J.Vec3(a.x,a.y,a.z),s=new J.SliderConstraintSettings(),st=gp(b,'st');s.mSpace=J.EConstraintSpace_WorldSpace;s.mAutoDetectPoint=true;
- if(s.SetSliderAxis)s.SetSliderAxis(ax2);else{s.mSliderAxis1=ax2;s.mSliderAxis2=ax2}s.mLimitsMin=-.005;s.mLimitsMax=st+.005;
+ if(lat.length()>.03||dot<.998||al<a.d0-.05||al>a.d0+a.st+.05){
+  if(!a.w){a.w=1;fail(`Actuator joint drifted: sideways ${lat.length().toFixed(3)} m, tilt ${(2*Math.acos(Math.min(1,dot))*57.3).toFixed(1)} deg, axial ${al.toFixed(3)} (allowed ${a.d0.toFixed(3)} to ${(a.d0+a.st).toFixed(3)}). Snapping it back.`)}
+  const c=Math.max(a.d0,Math.min(a.d0+a.st,al)),np=new V(pb.GetX(),pb.GetY(),pb.GetZ()).add(az.scale(c)),id=a.r.GetID(),v=a.b.GetLinearVelocity(),rv=a.r.GetLinearVelocity(),ax=V.Dot(new V(rv.GetX()-v.GetX(),rv.GetY()-v.GetY(),rv.GetZ()-v.GetZ()),az);
+  bi.SetPositionAndRotation(id,new J.RVec3(np.x,np.y,np.z),new J.Quat(q.GetX(),q.GetY(),q.GetZ(),q.GetW()),J.EActivation_Activate);bi.SetLinearVelocity(id,new J.Vec3(v.GetX()+az.x*ax,v.GetY()+az.y*ax,v.GetZ()+az.z*ax));bi.SetAngularVelocity(id,a.b.GetAngularVelocity())}}
+function slider(ib,ir){const b=parts[ib],a=obb(b).A[2],ax2=new J.Vec3(a.x,a.y,a.z),s=new J.SliderConstraintSettings(),st=gp(b,'st');s.mSpace=J.EConstraintSpace_WorldSpace;s.mAutoDetectPoint=false;const p0=b.position,nn=(Math.abs(a.y)<.9?V.Cross(a,V.Up()):V.Cross(a,V.Right())).normalize();
+ s.mPoint1=new J.RVec3(p0.x,p0.y,p0.z);s.mPoint2=new J.RVec3(p0.x,p0.y,p0.z);s.mSliderAxis1=ax2;s.mSliderAxis2=new J.Vec3(a.x,a.y,a.z);s.mNormalAxis1=new J.Vec3(nn.x,nn.y,nn.z);s.mNormalAxis2=new J.Vec3(nn.x,nn.y,nn.z);s.mLimitsMin=-.005;s.mLimitsMax=st+.005;
  const c=J.castObject(cc(s,bodies[ib],bodies[ir]),J.SliderConstraint);phys.AddConstraint(c);gf.DisableCollision(ib,ir);try{c.SetLimits(0,st)}catch(e){}c.SetMotorState(J.EMotorState_Position);c.SetTargetPosition(0);
  try{const m=c.GetMotorSettings(),F=60000*gp(b,'af')/100;m.mMaxForceLimit=F;m.mMinForceLimit=-F;m.mSpringSettings.mFrequency=gp(b,'hz');m.mSpringSettings.mDamping=1}catch(e){}
  acts.push({c,pos:0,st,sp:gp(b,'as'),ke:gp(b,'ke'),kq:gp(b,'kq'),b:bodies[ib],r:bodies[ir],d0:V.Dot(parts[ir].position.subtract(b.position),a)})}
@@ -349,14 +352,14 @@ function startPlay0(){if(!J)return toast('Physics is still loading');
  jolt=new J.JoltInterface(st);J.destroy(st);phys=jolt.GetPhysicsSystem();bi=phys.GetBodyInterface();try{const ps=phys.GetPhysicsSettings();[ps.mNumVelocitySteps,ps.mNumPositionSteps]=[[20,4],[30,5],[40,6],[50,8]][OPT.q];phys.SetPhysicsSettings(ps)}catch(e){}
  const gs=new J.BodyCreationSettings(new J.BoxShape(new J.Vec3(200,.5,200),.05,null),new J.RVec3(0,-.5,0),new J.Quat(0,0,0,1),J.EMotionType_Static,0);
  bi.AddBody(bi.CreateBody(gs).GetID(),J.EActivation_DontActivate);J.destroy(gs);
- const n=parts.length;gf=new J.GroupFilterTable(n);const con=contacts();pose(con);bodies=parts.map(mkBody);cons=[];motors=[];servos=[];links=[];acts=[];steer=0;parts.forEach(m=>m.computeWorldMatrix(true));
+ const n=parts.length;gf=new J.GroupFilterTable(n);const con=contacts();pose(con);bodies=parts.map(mkBody);cons=[];motors=[];servos=[];links=[];acts=[];uf=[];steer=0;parts.forEach(m=>m.computeWorldMatrix(true));
  const adj=[],ed=(i,j)=>{(adj[i]=adj[i]||[]).push(j);(adj[j]=adj[j]||[]).push(i)};
  for(const{i,j,ka,kb}of con){ed(i,j);
   if(ka==='S'&&kb==='S'||ka==='V'&&kb==='V')weld(i,j);
   else if(ka+kb==='MH'||ka+kb==='HM')ka==='H'?hinge(i,j):hinge(j,i);
   else if(ka==='K')ktie(i,j);else if(ka==='Q')qtie(i,j);else if(ka==='W')wbone(i,j);else if(kb==='W')wbone(j,i);else if(ka==='J')joint(i,j);else joint(j,i)}
  parts.forEach((m,i)=>{const l=m.metadata.link;if(!l)return;const a=parts.indexOf(l.a),b=parts.indexOf(l.b);if(a<0||b<0||!bodies[a]||!bodies[b])return;ed(a,b);PARTS[m.metadata.t].spr?spring(m,a,b):weld(a,b,i)});
- {const ag={};parts.forEach((m,i)=>{const g=m.metadata.g,t=m.metadata.t;if(g&&(t==='act_b'||t==='act_r'))(ag[g]=ag[g]||{})[t]=i});Object.values(ag).forEach(x=>{if(x.act_b!==undefined&&x.act_r!==undefined){slider(x.act_b,x.act_r);ed(x.act_b,x.act_r)}})}
+ {const ag={};parts.forEach((m,i)=>{const g=m.metadata.g,t=m.metadata.t;if(g&&(t==='act_b'||t==='act_r'))(ag[g]=ag[g]||{})[t]=i});Object.values(ag).forEach(x=>{if(x.act_b!==undefined&&x.act_r!==undefined){if(fd(x.act_b)===fd(x.act_r)){weld(x.act_b,x.act_r);ed(x.act_b,x.act_r);toast('An actuator has both ends fixed into the same frame, so it is locked in place')}else{slider(x.act_b,x.act_r);ed(x.act_b,x.act_r);parts.forEach((m,k)=>{if(k!==x.act_b&&k!==x.act_r&&fd(k)===fd(x.act_b))gf.DisableCollision(x.act_r,k)})}}})}
  const core=parts.findIndex(p=>p.metadata.t==='core'),seen=new Set([core]),stk=[core];while(stk.length){const i=stk.pop();(adj[i]||[]).forEach(j=>{if(!seen.has(j)){seen.add(j);stk.push(j)}})}
  const loose=parts.filter((p,i)=>!p.metadata.link&&!seen.has(i)).length;if(loose)toast(`${loose} part${loose>1?'s are':' is'} not attached to the core`);
  mode='play';acc=0;dir=0;document.body.classList.add('play');$('#bm').textContent='Stop';setDrive()}
